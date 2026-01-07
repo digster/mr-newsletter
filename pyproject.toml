@@ -9,7 +9,7 @@ authors = [{ name = "digster" }]
 
 dependencies = [
     # UI Framework
-    "flet>=0.25.0",
+    "flet[all]>=0.25.0",
 
     # Google APIs
     "google-api-python-client>=2.150.0",
@@ -71,6 +71,7 @@ dev-dependencies = [
     "mypy>=1.13.0",
     "aiosqlite>=0.20.0",
     "greenlet>=3.0.0",
+    "pyinstaller>=6.0.0",
 ]
 
 [tool.ruff]

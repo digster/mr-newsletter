@@ -134,6 +134,55 @@ docker compose up -d --build
 # Access at http://localhost:8550
 ```
 
+## Standalone Build
+
+Create a standalone executable that can be distributed without requiring Python installation.
+
+### Build Command
+
+```bash
+# Using Makefile (recommended)
+make build
+
+# Or manually
+uv run flet pack src/main.py --name "Newsletter Manager"
+```
+
+This creates a standalone executable in the `dist/` directory.
+
+### Build Options
+
+| Option | Description |
+|--------|-------------|
+| `--name "App Name"` | Set the application name |
+| `--icon path/to/icon.png` | Set the app icon |
+| `--add-data "src:src"` | Include additional data files |
+| `--hidden-import module` | Include hidden imports |
+| `--product-version "1.0.0"` | Set version number |
+
+### Full Build Example
+
+```bash
+uv run flet pack src/main.py \
+    --name "Newsletter Manager" \
+    --add-data "src/config:src/config" \
+    --add-data "src/ui:src/ui" \
+    --hidden-import sqlalchemy \
+    --hidden-import asyncpg \
+    --hidden-import google.auth \
+    --hidden-import apscheduler
+```
+
+### Platform Output
+
+- **macOS**: Creates a `.app` bundle in `dist/`
+- **Windows**: Creates a `.exe` in `dist/`
+- **Linux**: Creates an executable binary in `dist/`
+
+### Troubleshooting Builds
+
+If you encounter missing module errors at runtime, add them via `--hidden-import`. SQLAlchemy and Google API libraries often need explicit inclusion.
+
 ### Environment Variables
 
 | Variable | Description | Default |
@@ -194,6 +243,23 @@ mr-newsletter/
 ```
 
 ## Development
+
+### Makefile Commands
+
+The project includes a Makefile for common tasks:
+
+```bash
+make help       # Show all available commands
+make install    # Install dependencies
+make run        # Run desktop app
+make run-web    # Run web app
+make build      # Create standalone executable
+make test       # Run tests
+make lint       # Run linter
+make format     # Format code
+make typecheck  # Run type checker
+make migrate    # Run database migrations
+```
 
 ### Running Tests
 

@@ -1,0 +1,55 @@
+# Development Docker Compose configuration
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mr-newsletter-db-dev
+    environment:
+      POSTGRES_USER: newsletter
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: newsletter
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newsletter"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - newsletter-network-dev
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: mr-newsletter-app-dev
+    ports:
+      - "8550:8550"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src:ro
+      - ./migrations:/app/migrations:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://newsletter:devpassword@db:5432/newsletter
+      - ENCRYPTION_KEY=dev-encryption-key-change-in-production
+      - FLET_HOST=0.0.0.0
+      - FLET_PORT=8550
+      - FLET_WEB_APP=true
+      - FLET_HOT_RELOAD=true
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - newsletter-network-dev
+
+volumes:
+  postgres_data_dev:
+    driver: local
+
+networks:
+  newsletter-network-dev:
+    driver: bridge

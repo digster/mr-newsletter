@@ -1,0 +1,36 @@
+# Development Dockerfile for Newsletter Manager
+FROM python:3.11-slim
+
+# Install UV and development tools
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock* ./
+
+# Install all dependencies including dev
+RUN uv sync --frozen
+
+# Set environment variables
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+ENV PYTHONUNBUFFERED=1
+
+# Flet configuration for web mode with hot reload
+ENV FLET_HOST="0.0.0.0"
+ENV FLET_PORT="8550"
+ENV FLET_WEB_APP="true"
+ENV FLET_HOT_RELOAD="true"
+
+# Expose port
+EXPOSE 8550
+
+# Development command - run migrations and start with hot reload
+CMD ["sh", "-c", "alembic upgrade head && python -m src.main"]

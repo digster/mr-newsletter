@@ -1,0 +1,178 @@
+"""HTML sanitization utilities for safe email rendering."""
+
+from typing import Optional
+
+import bleach
+
+# Allowed HTML tags for email content
+ALLOWED_TAGS = [
+    "a",
+    "abbr",
+    "acronym",
+    "address",
+    "b",
+    "blockquote",
+    "br",
+    "center",
+    "code",
+    "dd",
+    "del",
+    "dfn",
+    "div",
+    "dl",
+    "dt",
+    "em",
+    "font",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "i",
+    "img",
+    "ins",
+    "kbd",
+    "li",
+    "ol",
+    "p",
+    "pre",
+    "q",
+    "s",
+    "samp",
+    "small",
+    "span",
+    "strike",
+    "strong",
+    "sub",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "tt",
+    "u",
+    "ul",
+    "var",
+]
+
+# Allowed HTML attributes
+ALLOWED_ATTRIBUTES = {
+    "*": ["class", "id", "style"],
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt", "title", "width", "height"],
+    "font": ["color", "face", "size"],
+    "table": ["border", "cellpadding", "cellspacing", "width"],
+    "td": ["colspan", "rowspan", "width", "align", "valign"],
+    "th": ["colspan", "rowspan", "width", "align", "valign"],
+    "tr": ["align", "valign"],
+    "div": ["align"],
+    "p": ["align"],
+}
+
+# Allowed CSS properties in style attributes
+ALLOWED_STYLES = [
+    "background-color",
+    "border",
+    "border-color",
+    "border-radius",
+    "border-style",
+    "border-width",
+    "color",
+    "display",
+    "font-family",
+    "font-size",
+    "font-style",
+    "font-weight",
+    "height",
+    "line-height",
+    "margin",
+    "margin-bottom",
+    "margin-left",
+    "margin-right",
+    "margin-top",
+    "max-width",
+    "min-height",
+    "min-width",
+    "padding",
+    "padding-bottom",
+    "padding-left",
+    "padding-right",
+    "padding-top",
+    "text-align",
+    "text-decoration",
+    "vertical-align",
+    "width",
+]
+
+
+def sanitize_html(html_content: Optional[str]) -> str:
+    """Sanitize HTML content for safe rendering.
+
+    Args:
+        html_content: Raw HTML content from email.
+
+    Returns:
+        Sanitized HTML content safe for rendering.
+    """
+    if not html_content:
+        return ""
+
+    # Clean the HTML
+    cleaned = bleach.clean(
+        html_content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        strip=True,
+    )
+
+    # Add target="_blank" and rel="noopener" to all links for security
+    cleaned = bleach.linkify(
+        cleaned,
+        callbacks=[_add_link_attributes],
+        skip_tags=["pre", "code"],
+    )
+
+    return cleaned
+
+
+def _add_link_attributes(attrs: dict, new: bool = False) -> dict:
+    """Add security attributes to links.
+
+    Args:
+        attrs: Link attributes.
+        new: Whether this is a new link.
+
+    Returns:
+        Modified attributes with security additions.
+    """
+    attrs[(None, "target")] = "_blank"
+    attrs[(None, "rel")] = "noopener noreferrer"
+    return attrs
+
+
+def html_to_safe_content(html_content: Optional[str]) -> str:
+    """Convert HTML to sanitized content with wrapper styling.
+
+    Args:
+        html_content: Raw HTML content.
+
+    Returns:
+        Sanitized HTML wrapped in a container div.
+    """
+    sanitized = sanitize_html(html_content)
+
+    # Wrap in a container with basic styling
+    return f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                line-height: 1.6;
+                color: inherit;
+                max-width: 100%;
+                overflow-wrap: break-word;">
+        {sanitized}
+    </div>
+    """

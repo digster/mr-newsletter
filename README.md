@@ -249,22 +249,27 @@ mr-newsletter/
 The project includes a Makefile for common tasks:
 
 ```bash
-make help       # Show all available commands
-make install    # Install dependencies
-make run        # Run desktop app
-make run-web    # Run web app
-make build      # Create standalone executable
-make test       # Run tests
-make lint       # Run linter
-make format     # Format code
-make typecheck  # Run type checker
-make migrate    # Run database migrations
+make help              # Show all available commands
+make install           # Install dependencies
+make run               # Run desktop app
+make run-web           # Run web app
+make run-web-debug     # Run web app for debugging with Claude
+make build             # Create standalone executable
+make test              # Run unit tests
+make test-e2e          # Run E2E tests with visible browser
+make test-e2e-ci       # Run E2E tests headless (for CI)
+make test-e2e-trace    # Run E2E tests with trace recording
+make playwright-install # Install Playwright browser binaries
+make lint              # Run linter
+make format            # Format code
+make typecheck         # Run type checker
+make migrate           # Run database migrations
 ```
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run unit tests
 uv run pytest
 
 # Run with coverage
@@ -272,7 +277,29 @@ uv run pytest --cov=src --cov-report=html
 
 # Run specific test file
 uv run pytest tests/unit/test_services/test_newsletter_service.py
+
+# Run E2E tests (requires Playwright - install with: make playwright-install)
+make test-e2e           # With visible browser
+make test-e2e-ci        # Headless (for CI)
+make test-e2e-trace     # With trace recording for debugging
 ```
+
+### Browser Debugging with Claude
+
+The project includes MCP (Model Context Protocol) integration for debugging UI issues with Claude:
+
+1. Start the web app in debug mode:
+   ```bash
+   make run-web-debug
+   ```
+
+2. In Claude Code, the Playwright MCP server can now interact with the running app at `http://127.0.0.1:8550`
+
+3. Ask Claude to:
+   - Navigate to specific pages and take screenshots
+   - Click elements and observe behavior
+   - Check for console errors
+   - Inspect the current page state
 
 ### Creating Migrations
 

@@ -1,16 +1,21 @@
-.PHONY: install run run-web build test lint format typecheck migrate help
+.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate help
 
 help:
 	@echo "Available commands:"
-	@echo "  make install    - Install dependencies"
-	@echo "  make run        - Run desktop app"
-	@echo "  make run-web    - Run web app"
-	@echo "  make build      - Create standalone executable"
-	@echo "  make test       - Run tests"
-	@echo "  make lint       - Run linter"
-	@echo "  make format     - Format code"
-	@echo "  make typecheck  - Run type checker"
-	@echo "  make migrate    - Run database migrations"
+	@echo "  make install           - Install dependencies"
+	@echo "  make run               - Run desktop app"
+	@echo "  make run-web           - Run web app"
+	@echo "  make run-web-debug     - Run web app for debugging with Claude"
+	@echo "  make build             - Create standalone executable"
+	@echo "  make test              - Run unit tests"
+	@echo "  make test-e2e          - Run E2E tests with visible browser"
+	@echo "  make test-e2e-ci       - Run E2E tests headless (for CI)"
+	@echo "  make test-e2e-trace    - Run E2E tests with trace recording"
+	@echo "  make playwright-install - Install Playwright browser binaries"
+	@echo "  make lint              - Run linter"
+	@echo "  make format            - Format code"
+	@echo "  make typecheck         - Run type checker"
+	@echo "  make migrate           - Run database migrations"
 
 install:
 	uv sync
@@ -45,3 +50,20 @@ typecheck:
 
 migrate:
 	uv run alembic upgrade head
+
+run-web-debug:
+	@echo "Starting Flet web app for debugging..."
+	@echo "Use Claude's MCP browser tools to interact with http://127.0.0.1:8550"
+	FLET_WEB_APP=true uv run python -m src.main
+
+playwright-install:
+	uv run playwright install chromium
+
+test-e2e:
+	uv run pytest tests/e2e/ -v --headed
+
+test-e2e-ci:
+	uv run pytest tests/e2e/ -v
+
+test-e2e-trace:
+	uv run pytest tests/e2e/ -v --tracing=on --output=tests/e2e/traces

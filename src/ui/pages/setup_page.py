@@ -93,7 +93,7 @@ class SetupPage(ft.View):
                                     ft.Container(height=10),
                                     ft.TextButton(
                                         "Open Google Cloud Console",
-                                        icon=ft.icons.OPEN_IN_NEW,
+                                        icon=ft.icons.LAUNCH,
                                         url="https://console.cloud.google.com/apis/credentials",
                                     ),
                                 ],

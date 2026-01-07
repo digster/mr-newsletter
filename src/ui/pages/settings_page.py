@@ -26,7 +26,7 @@ class SettingsPage(ft.View):
                 ft.dropdown.Option("light", "Light"),
                 ft.dropdown.Option("dark", "Dark"),
             ],
-            on_change=self._on_theme_change,
+            on_select=self._on_theme_change,
             width=200,
         )
 

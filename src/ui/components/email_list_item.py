@@ -80,5 +80,5 @@ class EmailListItem(ft.Container):
             border_radius=8,
             ink=True,
             on_click=on_click,
-            bgcolor=ft.Colors.SURFACE_VARIANT if not is_read else None,
+            bgcolor=ft.Colors.SURFACE_CONTAINER if not is_read else None,
         )

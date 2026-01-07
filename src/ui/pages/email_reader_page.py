@@ -101,7 +101,7 @@ class EmailReaderPage(ft.View):
                 ft.icons.STAR if self.email.is_starred else ft.icons.STAR_BORDER
             )
             self.star_button.icon_color = (
-                ft.colors.AMBER if self.email.is_starred else None
+                ft.Colors.AMBER if self.email.is_starred else None
             )
 
             # Build content
@@ -163,7 +163,7 @@ class EmailReaderPage(ft.View):
                                             ft.Text(
                                                 self.email.sender_email,
                                                 size=12,
-                                                color=ft.colors.ON_SURFACE_VARIANT,
+                                                color=ft.Colors.ON_SURFACE_VARIANT,
                                             ),
                                         ],
                                         spacing=2,
@@ -172,7 +172,7 @@ class EmailReaderPage(ft.View):
                                     ft.Text(
                                         date_str,
                                         size=12,
-                                        color=ft.colors.ON_SURFACE_VARIANT,
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
                                     ),
                                 ],
                             ),
@@ -233,7 +233,7 @@ class EmailReaderPage(ft.View):
                     ft.icons.STAR if self.email.is_starred else ft.icons.STAR_BORDER
                 )
                 self.star_button.icon_color = (
-                    ft.colors.AMBER if self.email.is_starred else None
+                    ft.Colors.AMBER if self.email.is_starred else None
                 )
                 self.app.page.update()
         except Exception as ex:

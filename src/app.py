@@ -217,7 +217,7 @@ class NewsletterApp:
         """
         self.page.snack_bar = ft.SnackBar(
             content=ft.Text(message),
-            bgcolor=ft.colors.ERROR if error else None,
+            bgcolor=ft.Colors.ERROR if error else None,
         )
         self.page.snack_bar.open = True
         self.page.update()

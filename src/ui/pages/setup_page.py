@@ -32,7 +32,7 @@ class SetupPage(ft.View):
         )
         self.error_text = ft.Text(
             "",
-            color=ft.colors.ERROR,
+            color=ft.Colors.ERROR,
             visible=False,
         )
         self.loading = ft.ProgressRing(visible=False)

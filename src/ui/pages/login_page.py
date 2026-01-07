@@ -20,7 +20,7 @@ class LoginPage(ft.View):
 
         self.error_text = ft.Text(
             "",
-            color=ft.colors.ERROR,
+            color=ft.Colors.ERROR,
             visible=False,
         )
         self.loading = ft.ProgressRing(visible=False)
@@ -40,7 +40,7 @@ class LoginPage(ft.View):
                     ft.Icon(
                         ft.icons.EMAIL_OUTLINED,
                         size=80,
-                        color=ft.colors.PRIMARY,
+                        color=ft.Colors.PRIMARY,
                     ),
                     ft.Container(height=20),
                     ft.Text(
@@ -52,7 +52,7 @@ class LoginPage(ft.View):
                     ft.Text(
                         "Sign in with your Google account to access your newsletters",
                         size=16,
-                        color=ft.colors.ON_SURFACE_VARIANT,
+                        color=ft.Colors.ON_SURFACE_VARIANT,
                     ),
                     ft.Container(height=40),
                     self.error_text,

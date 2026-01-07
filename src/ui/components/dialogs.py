@@ -23,7 +23,7 @@ class ConfirmDialog(ft.AlertDialog):
                 ft.TextButton(cancel_text, on_click=on_cancel),
                 ft.ElevatedButton(
                     confirm_text,
-                    color=ft.colors.ERROR if is_destructive else None,
+                    color=ft.Colors.ERROR if is_destructive else None,
                     on_click=on_confirm,
                 ),
             ],

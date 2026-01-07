@@ -32,17 +32,17 @@ class HomePage(ft.View):
                 ft.Icon(
                     ft.icons.INBOX_OUTLINED,
                     size=64,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 ft.Container(height=16),
                 ft.Text(
                     "No newsletters yet",
                     size=20,
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 ft.Text(
                     "Add a newsletter to get started",
-                    color=ft.colors.ON_SURFACE_VARIANT,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 ft.Container(height=16),
                 ft.ElevatedButton(
@@ -156,7 +156,7 @@ class HomePage(ft.View):
                                 ft.Container(
                                     content=ft.Icon(
                                         ft.icons.EMAIL,
-                                        color=ft.colors.WHITE,
+                                        color=ft.Colors.WHITE,
                                     ),
                                     bgcolor=color,
                                     border_radius=8,
@@ -175,7 +175,7 @@ class HomePage(ft.View):
                                         ft.Text(
                                             newsletter.gmail_label_name,
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                             max_lines=1,
                                             overflow=ft.TextOverflow.ELLIPSIS,
                                         ),
@@ -201,7 +201,7 @@ class HomePage(ft.View):
                                         ft.Text(
                                             "Unread",
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                         ),
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -217,7 +217,7 @@ class HomePage(ft.View):
                                         ft.Text(
                                             "Total",
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                         ),
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,

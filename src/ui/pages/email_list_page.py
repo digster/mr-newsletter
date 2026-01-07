@@ -106,11 +106,11 @@ class EmailListPage(ft.View):
                                 ft.Icon(
                                     ft.icons.INBOX_OUTLINED,
                                     size=48,
-                                    color=ft.colors.ON_SURFACE_VARIANT,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
                                 ),
                                 ft.Text(
                                     "No emails yet",
-                                    color=ft.colors.ON_SURFACE_VARIANT,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
                                 ),
                                 ft.TextButton(
                                     "Fetch Now",
@@ -141,7 +141,7 @@ class EmailListPage(ft.View):
                     ft.Container(
                         content=ft.Icon(
                             ft.icons.STAR if email.is_starred else ft.icons.STAR_BORDER,
-                            color=ft.colors.AMBER if email.is_starred else None,
+                            color=ft.Colors.AMBER if email.is_starred else None,
                             size=20,
                         ),
                         on_click=lambda _, eid=email.id: self.app.page.run_task(
@@ -153,7 +153,7 @@ class EmailListPage(ft.View):
                         width=8,
                         height=8,
                         border_radius=4,
-                        bgcolor=ft.colors.PRIMARY if not email.is_read else None,
+                        bgcolor=ft.Colors.PRIMARY if not email.is_read else None,
                     ),
                     ft.Container(width=12),
                     ft.Column(
@@ -170,14 +170,14 @@ class EmailListPage(ft.View):
                             ft.Text(
                                 email.sender_name or email.sender_email,
                                 size=12,
-                                color=ft.colors.ON_SURFACE_VARIANT,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
                             ft.Text(
                                 email.snippet or "",
                                 size=12,
-                                color=ft.colors.ON_SURFACE_VARIANT,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
@@ -188,7 +188,7 @@ class EmailListPage(ft.View):
                     ft.Text(
                         date_str,
                         size=12,
-                        color=ft.colors.ON_SURFACE_VARIANT,
+                        color=ft.Colors.ON_SURFACE_VARIANT,
                     ),
                 ],
             ),
@@ -196,7 +196,7 @@ class EmailListPage(ft.View):
             border_radius=8,
             ink=True,
             on_click=lambda _, eid=email.id: self.app.navigate(f"/email/{eid}"),
-            bgcolor=ft.colors.SURFACE_VARIANT if not email.is_read else None,
+            bgcolor=ft.Colors.SURFACE_VARIANT if not email.is_read else None,
         )
 
     async def _on_refresh(self, e: ft.ControlEvent) -> None:

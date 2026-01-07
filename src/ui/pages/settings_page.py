@@ -129,12 +129,12 @@ class SettingsPage(ft.View):
                                     ),
                                     ft.Text(
                                         "Version 0.1.0",
-                                        color=ft.colors.ON_SURFACE_VARIANT,
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
                                     ),
                                     ft.Container(height=8),
                                     ft.Text(
                                         "A simple newsletter reader with Gmail integration.",
-                                        color=ft.colors.ON_SURFACE_VARIANT,
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
                                     ),
                                 ],
                             ),
@@ -147,7 +147,7 @@ class SettingsPage(ft.View):
                         "Danger Zone",
                         size=20,
                         weight=ft.FontWeight.BOLD,
-                        color=ft.colors.ERROR,
+                        color=ft.Colors.ERROR,
                     ),
                     ft.Container(height=16),
                     ft.Card(
@@ -161,7 +161,7 @@ class SettingsPage(ft.View):
                                     ft.Text(
                                         "This will remove the stored Google OAuth client credentials. "
                                         "You'll need to reconfigure them.",
-                                        color=ft.colors.ON_SURFACE_VARIANT,
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
                                         size=12,
                                     ),
                                     ft.Container(height=8),
@@ -169,7 +169,7 @@ class SettingsPage(ft.View):
                                         "Reset Credentials",
                                         icon=ft.icons.WARNING,
                                         style=ft.ButtonStyle(
-                                            color=ft.colors.ERROR,
+                                            color=ft.Colors.ERROR,
                                         ),
                                         on_click=self._on_reset_credentials,
                                     ),
@@ -268,7 +268,7 @@ class SettingsPage(ft.View):
                 ),
                 ft.ElevatedButton(
                     "Reset",
-                    color=ft.colors.ERROR,
+                    color=ft.Colors.ERROR,
                     on_click=confirm_reset,
                 ),
             ],

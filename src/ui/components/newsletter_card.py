@@ -31,7 +31,7 @@ class NewsletterCard(ft.Card):
                                 ft.Container(
                                     content=ft.Icon(
                                         ft.icons.EMAIL,
-                                        color=ft.colors.WHITE,
+                                        color=ft.Colors.WHITE,
                                     ),
                                     bgcolor=color,
                                     border_radius=8,
@@ -48,7 +48,7 @@ class NewsletterCard(ft.Card):
                                         ft.Text(
                                             label,
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                         ),
                                     ],
                                     spacing=2,
@@ -69,7 +69,7 @@ class NewsletterCard(ft.Card):
                                         ft.Text(
                                             "Unread",
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                         ),
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -85,7 +85,7 @@ class NewsletterCard(ft.Card):
                                         ft.Text(
                                             "Total",
                                             size=12,
-                                            color=ft.colors.ON_SURFACE_VARIANT,
+                                            color=ft.Colors.ON_SURFACE_VARIANT,
                                         ),
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,

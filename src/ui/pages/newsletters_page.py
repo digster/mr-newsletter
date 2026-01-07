@@ -89,7 +89,7 @@ class NewslettersPage(ft.View):
                     ft.Container(
                         content=ft.Text(
                             "No newsletters yet. Click + to add one.",
-                            color=ft.colors.ON_SURFACE_VARIANT,
+                            color=ft.Colors.ON_SURFACE_VARIANT,
                         ),
                         padding=24,
                     )
@@ -110,7 +110,7 @@ class NewslettersPage(ft.View):
                         ft.Container(
                             content=ft.Icon(
                                 ft.icons.EMAIL,
-                                color=ft.colors.WHITE,
+                                color=ft.Colors.WHITE,
                             ),
                             bgcolor=newsletter.color or "#6750A4",
                             border_radius=8,
@@ -127,12 +127,12 @@ class NewslettersPage(ft.View):
                                 ft.Text(
                                     f"Label: {newsletter.gmail_label_name}",
                                     size=12,
-                                    color=ft.colors.ON_SURFACE_VARIANT,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
                                 ),
                                 ft.Text(
                                     f"Auto-fetch: {'Every ' + str(newsletter.fetch_interval_minutes) + ' min' if newsletter.auto_fetch_enabled else 'Disabled'}",
                                     size=12,
-                                    color=ft.colors.ON_SURFACE_VARIANT,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
                                 ),
                             ],
                             spacing=2,
@@ -309,7 +309,7 @@ class NewslettersPage(ft.View):
                     ft.Container(height=8),
                     ft.Text(
                         f"Gmail Label: {newsletter.gmail_label_name}",
-                        color=ft.colors.ON_SURFACE_VARIANT,
+                        color=ft.Colors.ON_SURFACE_VARIANT,
                     ),
                     ft.Container(height=8),
                     auto_fetch_switch,
@@ -352,7 +352,7 @@ class NewslettersPage(ft.View):
                 ft.TextButton("Cancel", on_click=lambda _: self.app.page.close(dialog)),
                 ft.ElevatedButton(
                     "Delete",
-                    color=ft.colors.ERROR,
+                    color=ft.Colors.ERROR,
                     on_click=delete,
                 ),
             ],

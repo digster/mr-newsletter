@@ -32,14 +32,14 @@ class EmailListItem(ft.Container):
                 [
                     ft.IconButton(
                         icon=ft.icons.STAR if is_starred else ft.icons.STAR_BORDER,
-                        icon_color=ft.colors.AMBER if is_starred else None,
+                        icon_color=ft.Colors.AMBER if is_starred else None,
                         on_click=on_star,
                     ),
                     ft.Container(
                         width=8,
                         height=8,
                         border_radius=4,
-                        bgcolor=ft.colors.PRIMARY if not is_read else None,
+                        bgcolor=ft.Colors.PRIMARY if not is_read else None,
                     ),
                     ft.Container(width=12),
                     ft.Column(
@@ -56,12 +56,12 @@ class EmailListItem(ft.Container):
                             ft.Text(
                                 sender,
                                 size=12,
-                                color=ft.colors.ON_SURFACE_VARIANT,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
                             ),
                             ft.Text(
                                 snippet,
                                 size=12,
-                                color=ft.colors.ON_SURFACE_VARIANT,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
@@ -72,7 +72,7 @@ class EmailListItem(ft.Container):
                     ft.Text(
                         date_str,
                         size=12,
-                        color=ft.colors.ON_SURFACE_VARIANT,
+                        color=ft.Colors.ON_SURFACE_VARIANT,
                     ),
                 ],
             ),
@@ -80,5 +80,5 @@ class EmailListItem(ft.Container):
             border_radius=8,
             ink=True,
             on_click=on_click,
-            bgcolor=ft.colors.SURFACE_VARIANT if not is_read else None,
+            bgcolor=ft.Colors.SURFACE_VARIANT if not is_read else None,
         )

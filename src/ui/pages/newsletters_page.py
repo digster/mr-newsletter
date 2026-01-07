@@ -26,15 +26,15 @@ class NewslettersPage(ft.View):
 
         self.appbar = ft.AppBar(
             leading=ft.IconButton(
-                icon=ft.icons.ARROW_BACK,
+                icon=ft.Icons.ARROW_BACK,
                 on_click=lambda _: self.app.navigate("/home"),
             ),
             title=ft.Text("Manage Newsletters"),
             actions=[
                 ft.IconButton(
-                    icon=ft.icons.ADD,
+                    icon=ft.Icons.ADD,
                     tooltip="Add newsletter",
-                    on_click=self._show_add_dialog,
+                    on_click=lambda e: self.app.page.run_task(self._show_add_dialog, e),
                 ),
             ],
         )
@@ -109,7 +109,7 @@ class NewslettersPage(ft.View):
                     [
                         ft.Container(
                             content=ft.Icon(
-                                ft.icons.EMAIL,
+                                ft.Icons.EMAIL,
                                 color=ft.Colors.WHITE,
                             ),
                             bgcolor=newsletter.color or "#6750A4",
@@ -139,12 +139,12 @@ class NewslettersPage(ft.View):
                             expand=True,
                         ),
                         ft.IconButton(
-                            icon=ft.icons.EDIT,
+                            icon=ft.Icons.EDIT,
                             tooltip="Edit",
                             on_click=lambda _, n=newsletter: self._show_edit_dialog(n),
                         ),
                         ft.IconButton(
-                            icon=ft.icons.DELETE,
+                            icon=ft.Icons.DELETE,
                             tooltip="Delete",
                             on_click=lambda _, n=newsletter: self._confirm_delete(n),
                         ),

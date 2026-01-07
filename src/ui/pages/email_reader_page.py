@@ -25,26 +25,26 @@ class EmailReaderPage(ft.View):
         self.title_text = ft.Text("Loading...", size=16)
 
         self.star_button = ft.IconButton(
-            icon=ft.icons.STAR_BORDER,
+            icon=ft.Icons.STAR_BORDER,
             tooltip="Star",
             on_click=self._toggle_star,
         )
 
         self.appbar = ft.AppBar(
             leading=ft.IconButton(
-                icon=ft.icons.ARROW_BACK,
+                icon=ft.Icons.ARROW_BACK,
                 on_click=self._go_back,
             ),
             title=self.title_text,
             actions=[
                 self.star_button,
                 ft.IconButton(
-                    icon=ft.icons.MARK_EMAIL_UNREAD,
+                    icon=ft.Icons.MARK_EMAIL_UNREAD,
                     tooltip="Mark as unread",
                     on_click=self._mark_unread,
                 ),
                 ft.IconButton(
-                    icon=ft.icons.ARCHIVE,
+                    icon=ft.Icons.ARCHIVE,
                     tooltip="Archive",
                     on_click=self._archive,
                 ),
@@ -98,7 +98,7 @@ class EmailReaderPage(ft.View):
             )
 
             self.star_button.icon = (
-                ft.icons.STAR if self.email.is_starred else ft.icons.STAR_BORDER
+                ft.Icons.STAR if self.email.is_starred else ft.Icons.STAR_BORDER
             )
             self.star_button.icon_color = (
                 ft.Colors.AMBER if self.email.is_starred else None
@@ -230,7 +230,7 @@ class EmailReaderPage(ft.View):
 
             if self.email:
                 self.star_button.icon = (
-                    ft.icons.STAR if self.email.is_starred else ft.icons.STAR_BORDER
+                    ft.Icons.STAR if self.email.is_starred else ft.Icons.STAR_BORDER
                 )
                 self.star_button.icon_color = (
                     ft.Colors.AMBER if self.email.is_starred else None

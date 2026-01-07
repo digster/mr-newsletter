@@ -280,6 +280,11 @@ class AuthService:
             client_id, client_secret = app_creds
             scopes = json.loads(user_cred.scopes)
 
+            # Ensure expiry is timezone-naive (google-auth uses naive UTC datetimes)
+            expiry = user_cred.token_expiry
+            if expiry is not None and expiry.tzinfo is not None:
+                expiry = expiry.replace(tzinfo=None)
+
             creds = Credentials(
                 token=access_token,
                 refresh_token=refresh_token,
@@ -287,7 +292,7 @@ class AuthService:
                 client_id=client_id,
                 client_secret=client_secret,
                 scopes=scopes,
-                expiry=user_cred.token_expiry,
+                expiry=expiry,
             )
 
             return creds

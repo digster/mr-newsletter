@@ -93,7 +93,7 @@ class SetupPage(ft.View):
                                     ft.Container(height=10),
                                     ft.TextButton(
                                         "Open Google Cloud Console",
-                                        icon=ft.icons.LAUNCH,
+                                        icon=ft.Icons.OPEN_IN_NEW,
                                         url="https://console.cloud.google.com/apis/credentials",
                                     ),
                                 ],
@@ -114,7 +114,7 @@ class SetupPage(ft.View):
                             self.loading,
                             ft.ElevatedButton(
                                 "Save & Continue",
-                                icon=ft.icons.ARROW_FORWARD,
+                                icon=ft.Icons.ARROW_FORWARD,
                                 on_click=self._on_save,
                             ),
                         ],

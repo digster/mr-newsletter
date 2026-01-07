@@ -32,7 +32,7 @@ class SettingsPage(ft.View):
 
         self.appbar = ft.AppBar(
             leading=ft.IconButton(
-                icon=ft.icons.ARROW_BACK,
+                icon=ft.Icons.ARROW_BACK,
                 on_click=lambda _: self.app.navigate("/home"),
             ),
             title=ft.Text("Settings"),
@@ -61,7 +61,7 @@ class SettingsPage(ft.View):
                                 [
                                     ft.Row(
                                         [
-                                            ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=48),
+                                            ft.Icon(ft.Icons.ACCOUNT_CIRCLE, size=48),
                                             ft.Container(width=16),
                                             ft.Column(
                                                 [
@@ -80,7 +80,7 @@ class SettingsPage(ft.View):
                                         [
                                             ft.OutlinedButton(
                                                 "Sign Out",
-                                                icon=ft.icons.LOGOUT,
+                                                icon=ft.Icons.LOGOUT,
                                                 on_click=self._on_sign_out,
                                             ),
                                         ],
@@ -122,7 +122,7 @@ class SettingsPage(ft.View):
                                 [
                                     ft.Row(
                                         [
-                                            ft.Icon(ft.icons.INFO_OUTLINE),
+                                            ft.Icon(ft.Icons.INFO_OUTLINE),
                                             ft.Container(width=12),
                                             ft.Text("Newsletter Manager"),
                                         ],
@@ -167,7 +167,7 @@ class SettingsPage(ft.View):
                                     ft.Container(height=8),
                                     ft.OutlinedButton(
                                         "Reset Credentials",
-                                        icon=ft.icons.WARNING,
+                                        icon=ft.Icons.WARNING,
                                         style=ft.ButtonStyle(
                                             color=ft.Colors.ERROR,
                                         ),

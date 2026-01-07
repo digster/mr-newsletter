@@ -38,7 +38,7 @@ class LoginPage(ft.View):
                 [
                     ft.Container(height=100),
                     ft.Icon(
-                        ft.icons.EMAIL_OUTLINED,
+                        ft.Icons.EMAIL_OUTLINED,
                         size=80,
                         color=ft.Colors.PRIMARY,
                     ),
@@ -63,7 +63,7 @@ class LoginPage(ft.View):
                             self.loading,
                             ft.ElevatedButton(
                                 "Sign in with Google",
-                                icon=ft.icons.LOGIN,
+                                icon=ft.Icons.LOGIN,
                                 on_click=self._on_sign_in,
                                 style=ft.ButtonStyle(
                                     padding=20,

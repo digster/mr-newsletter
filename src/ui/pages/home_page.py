@@ -30,7 +30,7 @@ class HomePage(ft.View):
         self.empty_state = ft.Column(
             [
                 ft.Icon(
-                    ft.icons.INBOX_OUTLINED,
+                    ft.Icons.INBOX_OUTLINED,
                     size=64,
                     color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
@@ -47,7 +47,7 @@ class HomePage(ft.View):
                 ft.Container(height=16),
                 ft.ElevatedButton(
                     "Add Newsletter",
-                    icon=ft.icons.ADD,
+                    icon=ft.Icons.ADD,
                     on_click=lambda _: self.app.navigate("/newsletters"),
                 ),
             ],
@@ -60,17 +60,17 @@ class HomePage(ft.View):
             center_title=False,
             actions=[
                 ft.IconButton(
-                    icon=ft.icons.REFRESH,
+                    icon=ft.Icons.REFRESH,
                     tooltip="Refresh all",
                     on_click=self._on_refresh_all,
                 ),
                 ft.IconButton(
-                    icon=ft.icons.FOLDER_OUTLINED,
+                    icon=ft.Icons.FOLDER_OUTLINED,
                     tooltip="Manage newsletters",
                     on_click=lambda _: self.app.navigate("/newsletters"),
                 ),
                 ft.IconButton(
-                    icon=ft.icons.SETTINGS,
+                    icon=ft.Icons.SETTINGS,
                     tooltip="Settings",
                     on_click=lambda _: self.app.navigate("/settings"),
                 ),
@@ -155,7 +155,7 @@ class HomePage(ft.View):
                             [
                                 ft.Container(
                                     content=ft.Icon(
-                                        ft.icons.EMAIL,
+                                        ft.Icons.EMAIL,
                                         color=ft.Colors.WHITE,
                                     ),
                                     bgcolor=color,
@@ -234,7 +234,7 @@ class HomePage(ft.View):
                                     ),
                                 ),
                                 ft.IconButton(
-                                    icon=ft.icons.REFRESH,
+                                    icon=ft.Icons.REFRESH,
                                     tooltip="Fetch now",
                                     on_click=lambda _, nid=newsletter.id: self.app.page.run_task(
                                         self._fetch_newsletter, nid

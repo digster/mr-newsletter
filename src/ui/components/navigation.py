@@ -12,18 +12,18 @@ class Navigation(ft.NavigationRail):
             label_type=ft.NavigationRailLabelType.ALL,
             destinations=[
                 ft.NavigationRailDestination(
-                    icon=ft.icons.HOME_OUTLINED,
-                    selected_icon=ft.icons.HOME,
+                    icon=ft.Icons.HOME_OUTLINED,
+                    selected_icon=ft.Icons.HOME,
                     label="Home",
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.icons.FOLDER_OUTLINED,
-                    selected_icon=ft.icons.FOLDER,
+                    icon=ft.Icons.FOLDER_OUTLINED,
+                    selected_icon=ft.Icons.FOLDER,
                     label="Newsletters",
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.icons.SETTINGS_OUTLINED,
-                    selected_icon=ft.icons.SETTINGS,
+                    icon=ft.Icons.SETTINGS_OUTLINED,
+                    selected_icon=ft.Icons.SETTINGS,
                     label="Settings",
                 ),
             ],

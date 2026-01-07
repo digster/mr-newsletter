@@ -30,7 +30,7 @@ class NewsletterCard(ft.Card):
                             [
                                 ft.Container(
                                     content=ft.Icon(
-                                        ft.icons.EMAIL,
+                                        ft.Icons.EMAIL,
                                         color=ft.Colors.WHITE,
                                     ),
                                     bgcolor=color,
@@ -97,7 +97,7 @@ class NewsletterCard(ft.Card):
                             [
                                 ft.TextButton("View", on_click=on_click),
                                 ft.IconButton(
-                                    icon=ft.icons.REFRESH,
+                                    icon=ft.Icons.REFRESH,
                                     on_click=on_refresh,
                                 ),
                             ],

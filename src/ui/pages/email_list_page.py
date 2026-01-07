@@ -30,13 +30,13 @@ class EmailListPage(ft.View):
 
         self.appbar = ft.AppBar(
             leading=ft.IconButton(
-                icon=ft.icons.ARROW_BACK,
+                icon=ft.Icons.ARROW_BACK,
                 on_click=lambda _: self.app.navigate("/home"),
             ),
             title=self.title_text,
             actions=[
                 ft.IconButton(
-                    icon=ft.icons.REFRESH,
+                    icon=ft.Icons.REFRESH,
                     tooltip="Fetch new emails",
                     on_click=self._on_refresh,
                 ),
@@ -104,7 +104,7 @@ class EmailListPage(ft.View):
                         content=ft.Column(
                             [
                                 ft.Icon(
-                                    ft.icons.INBOX_OUTLINED,
+                                    ft.Icons.INBOX_OUTLINED,
                                     size=48,
                                     color=ft.Colors.ON_SURFACE_VARIANT,
                                 ),
@@ -140,7 +140,7 @@ class EmailListPage(ft.View):
                 [
                     ft.Container(
                         content=ft.Icon(
-                            ft.icons.STAR if email.is_starred else ft.icons.STAR_BORDER,
+                            ft.Icons.STAR if email.is_starred else ft.Icons.STAR_BORDER,
                             color=ft.Colors.AMBER if email.is_starred else None,
                             size=20,
                         ),

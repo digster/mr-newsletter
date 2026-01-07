@@ -14,4 +14,6 @@ UI and UX should be based on modern standards.
 
 Everything should be clean, performant and adhering to modern coding standards.
 
+After every fix generate a git commit message that can be used by the user.
+
 Ask clarifying questions where necessary.

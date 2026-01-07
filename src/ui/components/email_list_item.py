@@ -31,7 +31,7 @@ class EmailListItem(ft.Container):
             content=ft.Row(
                 [
                     ft.IconButton(
-                        icon=ft.icons.STAR if is_starred else ft.icons.STAR_BORDER,
+                        icon=ft.Icons.STAR if is_starred else ft.Icons.STAR_BORDER,
                         icon_color=ft.Colors.AMBER if is_starred else None,
                         on_click=on_star,
                     ),

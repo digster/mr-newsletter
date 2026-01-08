@@ -27,7 +27,7 @@ class EmailReaderPage(ft.View):
         self.star_button = ft.IconButton(
             icon=ft.Icons.STAR_BORDER,
             tooltip="Star",
-            on_click=self._toggle_star,
+            on_click=lambda e: self.app.page.run_task(self._toggle_star, e),
         )
 
         self.appbar = ft.AppBar(
@@ -41,12 +41,12 @@ class EmailReaderPage(ft.View):
                 ft.IconButton(
                     icon=ft.Icons.MARK_EMAIL_UNREAD,
                     tooltip="Mark as unread",
-                    on_click=self._mark_unread,
+                    on_click=lambda e: self.app.page.run_task(self._mark_unread, e),
                 ),
                 ft.IconButton(
                     icon=ft.Icons.ARCHIVE,
                     tooltip="Archive",
-                    on_click=self._archive,
+                    on_click=lambda e: self.app.page.run_task(self._archive, e),
                 ),
             ],
         )

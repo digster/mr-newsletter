@@ -237,7 +237,7 @@ class SettingsPage(ft.View):
                 ),
                 ft.ElevatedButton(
                     "Sign Out",
-                    on_click=lambda e: self.app.page.run_task(confirm_sign_out(e)),
+                    on_click=lambda e: self.app.page.run_task(confirm_sign_out, e),
                 ),
             ],
         )
@@ -276,7 +276,7 @@ class SettingsPage(ft.View):
                 ft.ElevatedButton(
                     "Reset",
                     color=ft.Colors.ERROR,
-                    on_click=lambda e: self.app.page.run_task(confirm_reset(e)),
+                    on_click=lambda e: self.app.page.run_task(confirm_reset, e),
                 ),
             ],
         )

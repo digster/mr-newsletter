@@ -8,6 +8,8 @@ Always try and add tests for new features whenever possible.
 
 Always run tests after changes, to test integrity.
 
+For ui related changes, test the changes using an actual browser instance.
+
 Always ask before removing or changing any major existing functionality that is out of the scope of the request before working on it.
 
 UI and UX should be based on modern standards.

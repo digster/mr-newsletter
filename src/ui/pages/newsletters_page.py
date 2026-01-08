@@ -250,7 +250,7 @@ class NewslettersPage(ft.View):
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
-                ft.ElevatedButton("Add", on_click=save_newsletter),
+                ft.ElevatedButton("Add", on_click=lambda e: self.app.page.run_task(save_newsletter, e)),
             ],
         )
 
@@ -321,7 +321,7 @@ class NewslettersPage(ft.View):
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
-                ft.ElevatedButton("Save", on_click=save_changes),
+                ft.ElevatedButton("Save", on_click=lambda e: self.app.page.run_task(save_changes, e)),
             ],
         )
 
@@ -353,7 +353,7 @@ class NewslettersPage(ft.View):
                 ft.ElevatedButton(
                     "Delete",
                     color=ft.Colors.ERROR,
-                    on_click=delete,
+                    on_click=lambda e: self.app.page.run_task(delete, e),
                 ),
             ],
         )

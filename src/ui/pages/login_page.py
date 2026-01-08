@@ -64,7 +64,9 @@ class LoginPage(ft.View):
                             ft.ElevatedButton(
                                 "Sign in with Google",
                                 icon=ft.Icons.LOGIN,
-                                on_click=self._on_sign_in,
+                                on_click=lambda e: self.app.page.run_task(
+                                    self._on_sign_in, e
+                                ),
                                 style=ft.ButtonStyle(
                                     padding=20,
                                 ),

@@ -115,7 +115,9 @@ class SetupPage(ft.View):
                             ft.ElevatedButton(
                                 "Save & Continue",
                                 icon=ft.Icons.ARROW_FORWARD,
-                                on_click=self._on_save,
+                                on_click=lambda e: self.app.page.run_task(
+                                    self._on_save, e
+                                ),
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,

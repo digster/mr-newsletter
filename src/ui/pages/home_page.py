@@ -62,7 +62,9 @@ class HomePage(ft.View):
                 ft.IconButton(
                     icon=ft.Icons.REFRESH,
                     tooltip="Refresh all",
-                    on_click=self._on_refresh_all,
+                    on_click=lambda e: self.app.page.run_task(
+                        self._on_refresh_all, e
+                    ),
                 ),
                 ft.IconButton(
                     icon=ft.Icons.FOLDER_OUTLINED,

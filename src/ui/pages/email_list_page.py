@@ -38,7 +38,9 @@ class EmailListPage(ft.View):
                 ft.IconButton(
                     icon=ft.Icons.REFRESH,
                     tooltip="Fetch new emails",
-                    on_click=self._on_refresh,
+                    on_click=lambda e: self.app.page.run_task(
+                        self._on_refresh, e
+                    ),
                 ),
             ],
         )
@@ -114,7 +116,9 @@ class EmailListPage(ft.View):
                                 ),
                                 ft.TextButton(
                                     "Fetch Now",
-                                    on_click=self._on_refresh,
+                                    on_click=lambda e: self.app.page.run_task(
+                                        self._on_refresh, e
+                                    ),
                                 ),
                             ],
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,

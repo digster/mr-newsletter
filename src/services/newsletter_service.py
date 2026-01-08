@@ -68,7 +68,9 @@ class NewsletterService:
             fetch_interval_minutes=fetch_interval,
             color=color,
         )
-        return await self.newsletter_repo.create(newsletter)
+        result = await self.newsletter_repo.create(newsletter)
+        await self.session.commit()
+        return result
 
     async def get_newsletter(self, newsletter_id: int) -> Optional[Newsletter]:
         """Get newsletter by ID.
@@ -135,7 +137,9 @@ class NewsletterService:
         if color is not None:
             newsletter.color = color
 
-        return await self.newsletter_repo.update(newsletter)
+        result = await self.newsletter_repo.update(newsletter)
+        await self.session.commit()
+        return result
 
     async def delete_newsletter(self, newsletter_id: int) -> bool:
         """Delete a newsletter and all its emails.
@@ -146,7 +150,9 @@ class NewsletterService:
         Returns:
             True if deleted.
         """
-        return await self.newsletter_repo.delete_by_id(newsletter_id)
+        result = await self.newsletter_repo.delete_by_id(newsletter_id)
+        await self.session.commit()
+        return result
 
     async def fetch_newsletter_emails(
         self,

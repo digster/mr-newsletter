@@ -222,14 +222,14 @@ class SettingsPage(ft.View):
                     await auth_service.logout()
 
                 self.app.gmail_service = None
-                self.app.page.pop_dialog(dialog)
+                self.app.page.close(dialog)
                 self.app.show_snackbar("Signed out successfully")
                 self.app.navigate("/login")
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.pop_dialog(dialog)
+            self.app.page.close(dialog)
 
         dialog = ft.AlertDialog(
             title=ft.Text("Sign Out"),
@@ -257,14 +257,14 @@ class SettingsPage(ft.View):
                     await auth_service.logout()
 
                 self.app.gmail_service = None
-                self.app.page.pop_dialog(dialog)
+                self.app.page.close(dialog)
                 self.app.show_snackbar("Please reconfigure OAuth credentials")
                 self.app.navigate("/setup")
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.pop_dialog(dialog)
+            self.app.page.close(dialog)
 
         dialog = ft.AlertDialog(
             title=ft.Text("Reset Credentials"),

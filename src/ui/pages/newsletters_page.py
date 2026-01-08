@@ -227,7 +227,7 @@ class NewslettersPage(ft.View):
                         fetch_interval=interval,
                     )
 
-                self.app.page.close(dialog)
+                self.app.page.pop_dialog(dialog)
                 self.app.show_snackbar(f"Newsletter '{name}' created")
                 await self._load_newsletters()
             except Exception as ex:
@@ -249,12 +249,12 @@ class NewslettersPage(ft.View):
                 width=400,
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.close(dialog)),
+                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
                 ft.ElevatedButton("Add", on_click=save_newsletter),
             ],
         )
 
-        self.app.page.open(dialog)
+        self.app.page.show_dialog(dialog)
 
     def _show_edit_dialog(self, newsletter) -> None:
         """Show dialog to edit a newsletter."""
@@ -295,7 +295,7 @@ class NewslettersPage(ft.View):
                         fetch_interval=interval,
                     )
 
-                self.app.page.close(dialog)
+                self.app.page.pop_dialog(dialog)
                 self.app.show_snackbar("Newsletter updated")
                 await self._load_newsletters()
             except Exception as ex:
@@ -320,12 +320,12 @@ class NewslettersPage(ft.View):
                 width=400,
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.close(dialog)),
+                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
                 ft.ElevatedButton("Save", on_click=save_changes),
             ],
         )
 
-        self.app.page.open(dialog)
+        self.app.page.show_dialog(dialog)
 
     def _confirm_delete(self, newsletter) -> None:
         """Show confirmation dialog for deletion."""
@@ -336,7 +336,7 @@ class NewslettersPage(ft.View):
                     service = NewsletterService(session=session)
                     await service.delete_newsletter(newsletter.id)
 
-                self.app.page.close(dialog)
+                self.app.page.pop_dialog(dialog)
                 self.app.show_snackbar(f"Newsletter '{newsletter.name}' deleted")
                 await self._load_newsletters()
             except Exception as ex:
@@ -349,7 +349,7 @@ class NewslettersPage(ft.View):
                 "All emails will also be deleted."
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.close(dialog)),
+                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
                 ft.ElevatedButton(
                     "Delete",
                     color=ft.Colors.ERROR,
@@ -358,4 +358,4 @@ class NewslettersPage(ft.View):
             ],
         )
 
-        self.app.page.open(dialog)
+        self.app.page.show_dialog(dialog)

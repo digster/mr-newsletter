@@ -222,7 +222,7 @@ class SettingsPage(ft.View):
                     await auth_service.logout()
 
                 self.app.gmail_service = None
-                self.app.page.close(dialog)
+                self.app.page.pop_dialog(dialog)
                 self.app.show_snackbar("Signed out successfully")
                 self.app.navigate("/login")
             except Exception as ex:
@@ -233,7 +233,7 @@ class SettingsPage(ft.View):
             content=ft.Text("Are you sure you want to sign out?"),
             actions=[
                 ft.TextButton(
-                    "Cancel", on_click=lambda _: self.app.page.close(dialog)
+                    "Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)
                 ),
                 ft.ElevatedButton(
                     "Sign Out",
@@ -242,7 +242,7 @@ class SettingsPage(ft.View):
             ],
         )
 
-        self.app.page.open(dialog)
+        self.app.page.show_dialog(dialog)
 
     async def _on_reset_credentials(self, e: ft.ControlEvent) -> None:
         """Handle reset credentials."""
@@ -256,7 +256,7 @@ class SettingsPage(ft.View):
                     await auth_service.logout()
 
                 self.app.gmail_service = None
-                self.app.page.close(dialog)
+                self.app.page.pop_dialog(dialog)
                 self.app.show_snackbar("Please reconfigure OAuth credentials")
                 self.app.navigate("/setup")
             except Exception as ex:
@@ -271,7 +271,7 @@ class SettingsPage(ft.View):
             ),
             actions=[
                 ft.TextButton(
-                    "Cancel", on_click=lambda _: self.app.page.close(dialog)
+                    "Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)
                 ),
                 ft.ElevatedButton(
                     "Reset",
@@ -281,4 +281,4 @@ class SettingsPage(ft.View):
             ],
         )
 
-        self.app.page.open(dialog)
+        self.app.page.show_dialog(dialog)

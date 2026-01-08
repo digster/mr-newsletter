@@ -81,8 +81,8 @@ def mock_app():
     mock.page.update = MagicMock()
     mock.page.views = []
     mock.page.go = MagicMock()
-    mock.page.open = MagicMock()
-    mock.page.close = MagicMock()
+    mock.page.show_dialog = MagicMock()
+    mock.page.pop_dialog = MagicMock()
     mock.navigate = MagicMock()
     mock.show_snackbar = MagicMock()
     mock.gmail_service = MagicMock()
@@ -129,8 +129,8 @@ class TestSignOutFlow:
         await page._on_sign_out(mock_event)
 
         # Verify dialog was opened
-        mock_app.page.open.assert_called_once()
-        dialog = mock_app.page.open.call_args[0][0]
+        mock_app.page.show_dialog.assert_called_once()
+        dialog = mock_app.page.show_dialog.call_args[0][0]
         assert isinstance(dialog, ft.AlertDialog)
         assert "Sign Out" in dialog.title.value
 
@@ -154,7 +154,7 @@ class TestSignOutFlow:
             await page._on_sign_out(mock_event)
 
             # Get the dialog and find the confirm button
-            dialog = mock_app.page.open.call_args[0][0]
+            dialog = mock_app.page.show_dialog.call_args[0][0]
             confirm_btn = None
             for action in dialog.actions:
                 if isinstance(action, ft.ElevatedButton):
@@ -191,10 +191,10 @@ class TestSignOutFlow:
 
             # Step 1: Click sign out (opens dialog)
             await page._on_sign_out(MagicMock())
-            assert mock_app.page.open.called, "Dialog should be opened"
+            assert mock_app.page.show_dialog.called, "Dialog should be opened"
 
             # Step 2: Get the confirm handler from the dialog
-            dialog = mock_app.page.open.call_args[0][0]
+            dialog = mock_app.page.show_dialog.call_args[0][0]
 
             # Find the confirm_sign_out function by looking at what's passed to run_task
             # We need to manually execute what would happen when confirm is clicked
@@ -208,7 +208,7 @@ class TestSignOutFlow:
                 await mock_auth_service.logout()
 
             mock_app.gmail_service = None
-            mock_app.page.close(dialog)
+            mock_app.page.pop_dialog(dialog)
             mock_app.show_snackbar("Signed out successfully")
             mock_app.navigate("/login")
 
@@ -410,8 +410,8 @@ class TestResetCredentialsFlow:
 
         await page._on_reset_credentials(MagicMock())
 
-        mock_app.page.open.assert_called_once()
-        dialog = mock_app.page.open.call_args[0][0]
+        mock_app.page.show_dialog.assert_called_once()
+        dialog = mock_app.page.show_dialog.call_args[0][0]
         assert isinstance(dialog, ft.AlertDialog)
         assert "Reset" in dialog.title.value
 

@@ -270,8 +270,8 @@ ft.Text("Hello", color=ft.Colors.ON_PRIMARY)
 ```python
 ft.Container(
     gradient=ft.LinearGradient(
-        begin=ft.alignment.top_left,
-        end=ft.alignment.bottom_right,
+        begin=ft.Alignment.TOP_LEFT,
+        end=ft.Alignment.BOTTOM_RIGHT,
         colors=[ft.Colors.BLUE, ft.Colors.RED],
         stops=[0.0, 1.0],  # Optional color stops
         tile_mode=ft.GradientTileMode.CLAMP,
@@ -283,7 +283,7 @@ ft.Container(
 ```python
 ft.Container(
     gradient=ft.RadialGradient(
-        center=ft.alignment.center,
+        center=ft.Alignment.CENTER,
         radius=0.5,
         colors=[ft.Colors.YELLOW, ft.Colors.ORANGE],
         stops=[0.0, 1.0],
@@ -296,7 +296,7 @@ ft.Container(
 ```python
 ft.Container(
     gradient=ft.SweepGradient(
-        center=ft.alignment.center,
+        center=ft.Alignment.CENTER,
         start_angle=0.0,
         end_angle=6.28,  # 2*pi for full circle
         colors=[ft.Colors.RED, ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED],
@@ -312,7 +312,7 @@ page.bgcolor = ft.Colors.WHITE
 page.theme_mode = ft.ThemeMode.LIGHT
 
 # Primary action buttons
-ft.ElevatedButton(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)
+ft.Button(bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE)
 
 # Secondary/muted
 ft.Container(bgcolor=ft.Colors.GREY_100)
@@ -332,7 +332,7 @@ page.bgcolor = ft.Colors.GREY_900
 page.theme_mode = ft.ThemeMode.DARK
 
 # Primary action buttons
-ft.ElevatedButton(bgcolor=ft.Colors.BLUE_ACCENT_200, color=ft.Colors.BLACK)
+ft.Button(bgcolor=ft.Colors.BLUE_ACCENT_200, color=ft.Colors.BLACK)
 
 # Secondary/muted
 ft.Container(bgcolor=ft.Colors.GREY_800)

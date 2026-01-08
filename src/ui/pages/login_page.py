@@ -61,7 +61,7 @@ class LoginPage(ft.View):
                     ft.Row(
                         [
                             self.loading,
-                            ft.ElevatedButton(
+                            ft.Button(
                                 "Sign in with Google",
                                 icon=ft.Icons.LOGIN,
                                 on_click=lambda e: self.app.page.run_task(

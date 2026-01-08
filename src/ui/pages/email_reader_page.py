@@ -178,7 +178,7 @@ class EmailReaderPage(ft.View):
                             ),
                         ],
                     ),
-                    padding=ft.padding.only(bottom=24),
+                    padding=ft.Padding(bottom=24),
                 ),
                 ft.Divider(),
                 ft.Container(height=16),

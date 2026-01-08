@@ -236,7 +236,7 @@ class SettingsPage(ft.View):
             content=ft.Text("Are you sure you want to sign out?"),
             actions=[
                 ft.TextButton("Cancel", on_click=close_dialog),
-                ft.ElevatedButton(
+                ft.Button(
                     "Sign Out",
                     on_click=lambda e: self.app.page.run_task(confirm_sign_out, e),
                 ),
@@ -275,7 +275,7 @@ class SettingsPage(ft.View):
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=close_dialog),
-                ft.ElevatedButton(
+                ft.Button(
                     "Reset",
                     color=ft.Colors.ERROR,
                     on_click=lambda e: self.app.page.run_task(confirm_reset, e),

@@ -124,7 +124,7 @@ class EmailListPage(ft.View):
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
                         padding=48,
-                        alignment=ft.alignment.center,
+                        alignment=ft.Alignment.CENTER,
                     )
                 )
 
@@ -198,7 +198,6 @@ class EmailListPage(ft.View):
             ),
             padding=12,
             border_radius=8,
-            ink=True,
             on_click=lambda _, eid=email.id: self.app.navigate(f"/email/{eid}"),
             bgcolor=ft.Colors.SURFACE_VARIANT if not email.is_read else None,
         )

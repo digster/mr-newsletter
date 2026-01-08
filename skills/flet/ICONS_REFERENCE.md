@@ -7,7 +7,7 @@ Flet uses Material Design icons via `ft.Icons.*`. This reference covers commonly
 ```python
 ft.Icon(ft.Icons.FAVORITE, color=ft.Colors.RED, size=24)
 ft.IconButton(icon=ft.Icons.ADD, on_click=handler)
-ft.ElevatedButton("Save", icon=ft.Icons.SAVE)
+ft.Button("Save", icon=ft.Icons.SAVE)
 ```
 
 ## Common Icons by Category

@@ -121,14 +121,14 @@ class TestConfirmDialog:
         cancel_button = dialog.actions[0]
         assert isinstance(cancel_button, ft.TextButton)
 
-    def test_confirm_dialog_confirm_is_elevated_button(self):
-        """Test confirm button is ElevatedButton."""
+    def test_confirm_dialog_confirm_is_button(self):
+        """Test confirm button is Button."""
         dialog = ConfirmDialog(
             title="Title",
             message="Message",
         )
         confirm_button = dialog.actions[1]
-        assert isinstance(confirm_button, ft.ElevatedButton)
+        assert isinstance(confirm_button, ft.Button)
 
 
 class TestAddNewsletterDialog:

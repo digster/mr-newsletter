@@ -35,7 +35,6 @@ def run() -> None:
 
     # Configure Flet app options
     app_kwargs = {
-        "target": main,
         "port": settings.flet_port,
     }
 
@@ -47,7 +46,7 @@ def run() -> None:
         # Desktop app mode
         app_kwargs["view"] = ft.AppView.FLET_APP
 
-    ft.app(**app_kwargs)
+    ft.run(main, **app_kwargs)
 
 
 if __name__ == "__main__":

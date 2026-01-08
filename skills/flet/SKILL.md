@@ -24,8 +24,8 @@ def main(page: ft.Page):
     page.title = "My App"
     page.add(ft.Text("Hello, Flet!"))
 
-ft.app(main)  # Desktop window
-# ft.app(main, view=ft.AppView.WEB_BROWSER)  # Browser
+ft.run(main)  # Desktop window
+# ft.run(main, view=ft.AppView.WEB_BROWSER)  # Browser
 ```
 
 ## Core Concepts
@@ -71,7 +71,7 @@ def button_clicked(e):
     e.control.text = "Clicked!"
     e.control.update()
 
-page.add(ft.ElevatedButton("Click me", on_click=button_clicked))
+page.add(ft.Button("Click me", on_click=button_clicked))
 ```
 
 ## Layout Controls
@@ -108,7 +108,7 @@ ft.Container(
     border=ft.border.all(2, ft.Colors.BLACK),
     padding=20,
     margin=10,
-    alignment=ft.alignment.center,
+    alignment=ft.Alignment.CENTER,
     on_click=lambda e: print("Container clicked"),
 )
 ```
@@ -129,7 +129,7 @@ ft.Stack(
 ```python
 ft.Row([
     ft.TextField(expand=1),  # Takes available space
-    ft.ElevatedButton("Send"),
+    ft.Button("Send"),
 ])
 ```
 
@@ -182,7 +182,7 @@ rg = ft.RadioGroup(
 ### Buttons
 
 ```python
-ft.ElevatedButton("Elevated", on_click=handler)
+ft.Button("Elevated", on_click=handler)
 ft.FilledButton("Filled", on_click=handler)
 ft.OutlinedButton("Outlined", on_click=handler)
 ft.TextButton("Text", on_click=handler)
@@ -284,7 +284,7 @@ def main(page: ft.Page):
     def route_change(e):
         page.views.clear()
         page.views.append(
-            ft.View("/", [ft.AppBar(title=ft.Text("Home")), ft.ElevatedButton("Go to Store", on_click=lambda _: page.go("/store"))])
+            ft.View("/", [ft.AppBar(title=ft.Text("Home")), ft.Button("Go to Store", on_click=lambda _: page.go("/store"))])
         )
         if page.route == "/store":
             page.views.append(
@@ -300,7 +300,7 @@ def main(page: ft.Page):
     page.on_view_pop = view_pop
     page.go("/")
 
-ft.app(main)
+ft.run(main)
 ```
 
 ## Dialogs and Overlays
@@ -331,7 +331,7 @@ page.open(ft.SnackBar(content=ft.Text("Operation completed!")))
 ```python
 bs = ft.BottomSheet(
     content=ft.Container(
-        content=ft.Column([ft.Text("Bottom Sheet"), ft.ElevatedButton("Close", on_click=lambda e: page.close(bs))]),
+        content=ft.Column([ft.Text("Bottom Sheet"), ft.Button("Close", on_click=lambda e: page.close(bs))]),
         padding=20,
     ),
 )
@@ -378,7 +378,7 @@ page.theme_mode = ft.ThemeMode.SYSTEM
 ### Styled Control
 
 ```python
-class MyButton(ft.ElevatedButton):
+class MyButton(ft.Button):
     def __init__(self, text):
         super().__init__()
         self.text = text
@@ -438,9 +438,9 @@ async def main(page: ft.Page):
         page.add(ft.Text("Data loaded!"))
         page.update()
     
-    page.add(ft.ElevatedButton("Load", on_click=fetch_data))
+    page.add(ft.Button("Load", on_click=fetch_data))
 
-ft.app(main)
+ft.run(main)
 ```
 
 ## Packaging and Distribution
@@ -449,7 +449,7 @@ ft.app(main)
 
 ```
 my_app/
-├── main.py           # Entry point with ft.app(main)
+├── main.py           # Entry point with ft.run(main)
 ├── assets/           # Images, fonts, etc.
 │   └── icon.png
 ├── requirements.txt  # Dependencies
@@ -550,7 +550,7 @@ def validate_and_submit(e):
     page.open(ft.SnackBar(content=ft.Text("Submitted!")))
 
 name_field = ft.TextField(label="Name")
-page.add(name_field, ft.ElevatedButton("Submit", on_click=validate_and_submit))
+page.add(name_field, ft.Button("Submit", on_click=validate_and_submit))
 ```
 
 ### Loading State

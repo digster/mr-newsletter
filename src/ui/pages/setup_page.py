@@ -112,7 +112,7 @@ class SetupPage(ft.View):
                     ft.Row(
                         [
                             self.loading,
-                            ft.ElevatedButton(
+                            ft.Button(
                                 "Save & Continue",
                                 icon=ft.Icons.ARROW_FORWARD,
                                 on_click=lambda e: self.app.page.run_task(

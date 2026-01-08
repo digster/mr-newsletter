@@ -45,7 +45,7 @@ class HomePage(ft.View):
                     color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
                 ft.Container(height=16),
-                ft.ElevatedButton(
+                ft.Button(
                     "Add Newsletter",
                     icon=ft.Icons.ADD,
                     on_click=lambda _: self.app.navigate("/newsletters"),
@@ -102,7 +102,7 @@ class HomePage(ft.View):
                                         self.loading,
                                     ],
                                 ),
-                                padding=ft.padding.only(bottom=16),
+                                padding=ft.Padding(bottom=16),
                             ),
                             self.newsletters_grid,
                             self.empty_state,

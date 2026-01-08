@@ -162,7 +162,7 @@ class TestSignOutFlow:
             dialog = mock_app.page.show_dialog.call_args[0][0]
             confirm_btn = None
             for action in dialog.actions:
-                if isinstance(action, ft.ElevatedButton):
+                if isinstance(action, ft.Button):
                     confirm_btn = action
                     break
 

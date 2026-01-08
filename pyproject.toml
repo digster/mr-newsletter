@@ -9,7 +9,7 @@ authors = [{ name = "digster" }]
 
 dependencies = [
     # UI Framework
-    "flet[all]>=0.25.0",
+    "flet[all]>=0.80.0",
 
     # Google APIs
     "google-api-python-client>=2.150.0",

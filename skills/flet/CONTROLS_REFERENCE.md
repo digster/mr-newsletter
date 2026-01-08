@@ -24,16 +24,16 @@ Wrapper with styling capabilities.
 ft.Container(
     content=ft.Text("Content"),
     width=200, height=100,
-    padding=ft.padding.all(10),
-    margin=ft.margin.only(left=10),
+    padding=ft.Padding(all=10),
+    margin=ft.Margin(left=10),
     bgcolor=ft.Colors.AMBER,
     border=ft.border.all(2, ft.Colors.BLACK),
     border_radius=ft.border_radius.all(10),
-    gradient=ft.LinearGradient(begin=ft.alignment.top_left, end=ft.alignment.bottom_right, colors=[ft.Colors.BLUE, ft.Colors.RED]),
+    gradient=ft.LinearGradient(begin=ft.Alignment.TOP_LEFT, end=ft.Alignment.BOTTOM_RIGHT, colors=[ft.Colors.BLUE, ft.Colors.RED]),
     shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.BLACK54),
-    alignment=ft.alignment.center,
+    alignment=ft.Alignment.CENTER,
     clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-    animate=ft.animation.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
+    animate=ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
     on_click=handler, on_hover=handler, on_long_press=handler,
 )
 ```
@@ -438,9 +438,9 @@ ft.AutoComplete(
 
 ## Button Controls
 
-### ElevatedButton
+### Button
 ```python
-ft.ElevatedButton(
+ft.Button(
     text="Button",
     icon=ft.Icons.ADD,
     icon_color=ft.Colors.WHITE,
@@ -449,7 +449,7 @@ ft.ElevatedButton(
     elevation=4,
     style=ft.ButtonStyle(
         shape=ft.RoundedRectangleBorder(radius=10),
-        padding=ft.padding.all(20),
+        padding=ft.Padding(all=20),
     ),
     autofocus=False,
     on_click=handler,
@@ -718,7 +718,7 @@ ft.ListTile(
     trailing=ft.Icon(ft.Icons.ARROW_FORWARD_IOS),
     is_three_line=False,
     dense=False,
-    content_padding=ft.padding.symmetric(horizontal=16),
+    content_padding=ft.Padding(horizontal=16),
     selected=False,
     autofocus=False,
     on_click=handler,
@@ -951,8 +951,8 @@ ft.GestureDetector(
 ft.ShaderMask(
     content=ft.Image(src="image.png"),
     shader=ft.LinearGradient(
-        begin=ft.alignment.top_center,
-        end=ft.alignment.bottom_center,
+        begin=ft.Alignment.TOP_CENTER,
+        end=ft.Alignment.BOTTOM_CENTER,
         colors=[ft.Colors.BLACK, ft.Colors.TRANSPARENT],
     ),
     blend_mode=ft.BlendMode.DST_IN,

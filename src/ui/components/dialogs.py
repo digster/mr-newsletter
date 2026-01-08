@@ -21,7 +21,7 @@ class ConfirmDialog(ft.AlertDialog):
             content=ft.Text(message),
             actions=[
                 ft.TextButton(cancel_text, on_click=on_cancel),
-                ft.ElevatedButton(
+                ft.Button(
                     confirm_text,
                     color=ft.Colors.ERROR if is_destructive else None,
                     on_click=on_confirm,
@@ -81,7 +81,7 @@ class AddNewsletterDialog(ft.AlertDialog):
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=on_cancel),
-                ft.ElevatedButton("Add", on_click=on_save),
+                ft.Button("Add", on_click=on_save),
             ],
         )
 

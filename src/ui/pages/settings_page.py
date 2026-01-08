@@ -81,7 +81,9 @@ class SettingsPage(ft.View):
                                             ft.OutlinedButton(
                                                 "Sign Out",
                                                 icon=ft.Icons.LOGOUT,
-                                                on_click=self._on_sign_out,
+                                                on_click=lambda e: self.app.page.run_task(
+                                                    self._on_sign_out, e
+                                                ),
                                             ),
                                         ],
                                     ),
@@ -171,7 +173,9 @@ class SettingsPage(ft.View):
                                         style=ft.ButtonStyle(
                                             color=ft.Colors.ERROR,
                                         ),
-                                        on_click=self._on_reset_credentials,
+                                        on_click=lambda e: self.app.page.run_task(
+                                            self._on_reset_credentials, e
+                                        ),
                                     ),
                                 ],
                             ),
@@ -231,7 +235,10 @@ class SettingsPage(ft.View):
                 ft.TextButton(
                     "Cancel", on_click=lambda _: self.app.page.close(dialog)
                 ),
-                ft.ElevatedButton("Sign Out", on_click=confirm_sign_out),
+                ft.ElevatedButton(
+                    "Sign Out",
+                    on_click=lambda e: self.app.page.run_task(confirm_sign_out, e),
+                ),
             ],
         )
 
@@ -269,7 +276,7 @@ class SettingsPage(ft.View):
                 ft.ElevatedButton(
                     "Reset",
                     color=ft.Colors.ERROR,
-                    on_click=confirm_reset,
+                    on_click=lambda e: self.app.page.run_task(confirm_reset, e),
                 ),
             ],
         )

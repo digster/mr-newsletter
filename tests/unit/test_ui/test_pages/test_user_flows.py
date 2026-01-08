@@ -89,6 +89,10 @@ def mock_app():
     mock.gmail_service = MagicMock()
     mock.gmail_service.get_labels = MagicMock(return_value=[])
 
+    # Add dialog methods (Flet 0.80+ API)
+    mock.page.show_dialog = MagicMock()
+    mock.page.pop_dialog = MagicMock()
+
     # Track session usage
     mock_session = MagicMock()
 

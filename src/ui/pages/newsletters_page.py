@@ -156,12 +156,16 @@ class NewslettersPage(ft.View):
 
     async def _show_add_dialog(self, e: ft.ControlEvent) -> None:
         """Show dialog to add a newsletter."""
-        # Get labels from Gmail
-        if not self.app.gmail_service:
-            self.app.show_snackbar("Not authenticated", error=True)
-            return
+        try:
+            # Get labels from Gmail
+            if not self.app.gmail_service:
+                self.app.show_snackbar("Not authenticated", error=True)
+                return
 
-        labels = self.app.gmail_service.get_labels(user_labels_only=True)
+            labels = self.app.gmail_service.get_labels(user_labels_only=True)
+        except Exception as ex:
+            self.app.show_snackbar(f"Error loading labels: {ex}", error=True)
+            return
 
         # Create dialog
         name_field = ft.TextField(
@@ -187,27 +191,27 @@ class NewslettersPage(ft.View):
         )
 
         async def save_newsletter(e: ft.ControlEvent) -> None:
-            name = name_field.value.strip()
-            label_id = label_dropdown.value
-
-            if not name:
-                self.app.show_snackbar("Name is required", error=True)
-                return
-            if not label_id:
-                self.app.show_snackbar("Label is required", error=True)
-                return
-
-            # Find label name
-            label_name = next(
-                (l.name for l in labels if l.id == label_id), label_id
-            )
-
             try:
-                interval = int(interval_field.value or "1440")
-            except ValueError:
-                interval = 1440
+                name = (name_field.value or "").strip()
+                label_id = label_dropdown.value
 
-            try:
+                if not name:
+                    self.app.show_snackbar("Name is required", error=True)
+                    return
+                if not label_id:
+                    self.app.show_snackbar("Label is required", error=True)
+                    return
+
+                # Find label name
+                label_name = next(
+                    (l.name for l in labels if l.id == label_id), label_id
+                )
+
+                try:
+                    interval = int(interval_field.value or "1440")
+                except ValueError:
+                    interval = 1440
+
                 async with self.app.get_session() as session:
                     service = NewsletterService(session=session)
 
@@ -233,6 +237,9 @@ class NewslettersPage(ft.View):
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
+        def close_dialog(_):
+            self.app.page.pop_dialog(dialog)
+
         dialog = ft.AlertDialog(
             title=ft.Text("Add Newsletter"),
             content=ft.Column(
@@ -249,7 +256,7 @@ class NewslettersPage(ft.View):
                 width=400,
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
+                ft.TextButton("Cancel", on_click=close_dialog),
                 ft.ElevatedButton("Add", on_click=lambda e: self.app.page.run_task(save_newsletter, e)),
             ],
         )
@@ -275,17 +282,17 @@ class NewslettersPage(ft.View):
         )
 
         async def save_changes(e: ft.ControlEvent) -> None:
-            name = name_field.value.strip()
-            if not name:
-                self.app.show_snackbar("Name is required", error=True)
-                return
-
             try:
-                interval = int(interval_field.value or "1440")
-            except ValueError:
-                interval = 1440
+                name = (name_field.value or "").strip()
+                if not name:
+                    self.app.show_snackbar("Name is required", error=True)
+                    return
 
-            try:
+                try:
+                    interval = int(interval_field.value or "1440")
+                except ValueError:
+                    interval = 1440
+
                 async with self.app.get_session() as session:
                     service = NewsletterService(session=session)
                     await service.update_newsletter(
@@ -300,6 +307,9 @@ class NewslettersPage(ft.View):
                 await self._load_newsletters()
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
+
+        def close_dialog(_):
+            self.app.page.pop_dialog(dialog)
 
         dialog = ft.AlertDialog(
             title=ft.Text("Edit Newsletter"),
@@ -320,7 +330,7 @@ class NewslettersPage(ft.View):
                 width=400,
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
+                ft.TextButton("Cancel", on_click=close_dialog),
                 ft.ElevatedButton("Save", on_click=lambda e: self.app.page.run_task(save_changes, e)),
             ],
         )
@@ -342,6 +352,9 @@ class NewslettersPage(ft.View):
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
+        def close_dialog(_):
+            self.app.page.pop_dialog(dialog)
+
         dialog = ft.AlertDialog(
             title=ft.Text("Delete Newsletter"),
             content=ft.Text(
@@ -349,7 +362,7 @@ class NewslettersPage(ft.View):
                 "All emails will also be deleted."
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)),
+                ft.TextButton("Cancel", on_click=close_dialog),
                 ft.ElevatedButton(
                     "Delete",
                     color=ft.Colors.ERROR,

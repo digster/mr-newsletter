@@ -228,13 +228,14 @@ class SettingsPage(ft.View):
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
+        def close_dialog(_):
+            self.app.page.pop_dialog(dialog)
+
         dialog = ft.AlertDialog(
             title=ft.Text("Sign Out"),
             content=ft.Text("Are you sure you want to sign out?"),
             actions=[
-                ft.TextButton(
-                    "Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)
-                ),
+                ft.TextButton("Cancel", on_click=close_dialog),
                 ft.ElevatedButton(
                     "Sign Out",
                     on_click=lambda e: self.app.page.run_task(confirm_sign_out, e),
@@ -262,6 +263,9 @@ class SettingsPage(ft.View):
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
+        def close_dialog(_):
+            self.app.page.pop_dialog(dialog)
+
         dialog = ft.AlertDialog(
             title=ft.Text("Reset Credentials"),
             content=ft.Text(
@@ -270,9 +274,7 @@ class SettingsPage(ft.View):
                 "Are you sure?"
             ),
             actions=[
-                ft.TextButton(
-                    "Cancel", on_click=lambda _: self.app.page.pop_dialog(dialog)
-                ),
+                ft.TextButton("Cancel", on_click=close_dialog),
                 ft.ElevatedButton(
                     "Reset",
                     color=ft.Colors.ERROR,

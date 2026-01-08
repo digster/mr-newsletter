@@ -74,15 +74,16 @@ def find_icon_button(control, icon):
 
 @pytest.fixture
 def mock_app():
-    """Create a mock app that tracks all interactions."""
+    """Create a mock app that tracks all interactions.
+
+    Uses spec=ft.Page to validate against the real Flet Page API,
+    catching API compatibility issues when Flet is upgraded.
+    """
     mock = MagicMock()
-    mock.page = MagicMock()
-    mock.page.run_task = MagicMock()
-    mock.page.update = MagicMock()
+    # Use spec=ft.Page to enforce real Flet Page interface
+    mock.page = MagicMock(spec=ft.Page)
+    # Configure specific behaviors needed for tests
     mock.page.views = []
-    mock.page.go = MagicMock()
-    mock.page.show_dialog = MagicMock()
-    mock.page.pop_dialog = MagicMock()
     mock.navigate = MagicMock()
     mock.show_snackbar = MagicMock()
     mock.gmail_service = MagicMock()

@@ -94,39 +94,40 @@ class EmailListPage(ft.View):
                     self.newsletter_id, limit=100
                 )
 
-            self.emails_list.controls.clear()
+                # Process emails inside session context to avoid detached object issues
+                self.emails_list.controls.clear()
 
-            if emails:
-                for email in emails:
-                    tile = self._create_email_tile(email)
-                    self.emails_list.controls.append(tile)
-            else:
-                self.emails_list.controls.append(
-                    ft.Container(
-                        content=ft.Column(
-                            [
-                                ft.Icon(
-                                    ft.Icons.INBOX_OUTLINED,
-                                    size=48,
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                                ft.Text(
-                                    "No emails yet",
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                                ft.TextButton(
-                                    "Fetch Now",
-                                    on_click=lambda e: self.app.page.run_task(
-                                        self._on_refresh, e
+                if emails:
+                    for email in emails:
+                        tile = self._create_email_tile(email)
+                        self.emails_list.controls.append(tile)
+                else:
+                    self.emails_list.controls.append(
+                        ft.Container(
+                            content=ft.Column(
+                                [
+                                    ft.Icon(
+                                        ft.Icons.INBOX_OUTLINED,
+                                        size=48,
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
                                     ),
-                                ),
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        ),
-                        padding=48,
-                        alignment=ft.Alignment.CENTER,
+                                    ft.Text(
+                                        "No emails yet",
+                                        color=ft.Colors.ON_SURFACE_VARIANT,
+                                    ),
+                                    ft.TextButton(
+                                        "Fetch Now",
+                                        on_click=lambda e: self.app.page.run_task(
+                                            self._on_refresh, e
+                                        ),
+                                    ),
+                                ],
+                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            ),
+                            padding=48,
+                            alignment=ft.Alignment.CENTER,
+                        )
                     )
-                )
 
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)

@@ -10,7 +10,6 @@ from src.models.base import Base
 
 # Import all models to ensure they're registered with Base.metadata
 from src.models import (  # noqa: F401
-    AppCredentials,
     Email,
     Newsletter,
     UserCredential,

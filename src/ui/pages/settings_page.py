@@ -143,45 +143,6 @@ class SettingsPage(ft.View):
                             padding=20,
                         ),
                     ),
-                    ft.Container(height=32),
-                    # Danger zone
-                    ft.Text(
-                        "Danger Zone",
-                        size=20,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.ERROR,
-                    ),
-                    ft.Container(height=16),
-                    ft.Card(
-                        content=ft.Container(
-                            content=ft.Column(
-                                [
-                                    ft.Text(
-                                        "Reset OAuth Credentials",
-                                        weight=ft.FontWeight.BOLD,
-                                    ),
-                                    ft.Text(
-                                        "This will remove the stored Google OAuth client credentials. "
-                                        "You'll need to reconfigure them.",
-                                        color=ft.Colors.ON_SURFACE_VARIANT,
-                                        size=12,
-                                    ),
-                                    ft.Container(height=8),
-                                    ft.OutlinedButton(
-                                        "Reset Credentials",
-                                        icon=ft.Icons.WARNING,
-                                        style=ft.ButtonStyle(
-                                            color=ft.Colors.ERROR,
-                                        ),
-                                        on_click=lambda e: self.app.page.run_task(
-                                            self._on_reset_credentials, e
-                                        ),
-                                    ),
-                                ],
-                            ),
-                            padding=20,
-                        ),
-                    ),
                 ],
                 scroll=ft.ScrollMode.AUTO,
             ),
@@ -239,46 +200,6 @@ class SettingsPage(ft.View):
                 ft.Button(
                     "Sign Out",
                     on_click=lambda e: self.app.page.run_task(confirm_sign_out, e),
-                ),
-            ],
-        )
-
-        self.app.page.show_dialog(dialog)
-
-    async def _on_reset_credentials(self, e: ft.ControlEvent) -> None:
-        """Handle reset credentials."""
-
-        async def confirm_reset(e: ft.ControlEvent) -> None:
-            try:
-                # This would need to be implemented to clear AppCredentials
-                # For now, just sign out and go to setup
-                async with self.app.get_session() as session:
-                    auth_service = AuthService(session)
-                    await auth_service.logout()
-
-                self.app.gmail_service = None
-                self.app.page.close(dialog)
-                self.app.show_snackbar("Please reconfigure OAuth credentials")
-                self.app.navigate("/setup")
-            except Exception as ex:
-                self.app.show_snackbar(f"Error: {ex}", error=True)
-
-        def close_dialog(_):
-            self.app.page.close(dialog)
-
-        dialog = ft.AlertDialog(
-            title=ft.Text("Reset Credentials"),
-            content=ft.Text(
-                "This will remove your OAuth credentials. "
-                "You'll need to reconfigure them from Google Cloud Console.\n\n"
-                "Are you sure?"
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
-                ft.Button(
-                    "Reset",
-                    color=ft.Colors.ERROR,
-                    on_click=lambda e: self.app.page.run_task(confirm_reset, e),
                 ),
             ],
         )

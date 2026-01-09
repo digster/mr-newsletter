@@ -282,59 +282,6 @@ class TestSignInFlow:
             assert "OAuth failed" in page.error_text.value
 
 
-class TestSetupFlow:
-    """Test the OAuth setup flow."""
-
-    def test_save_handler_is_async(self, mock_app):
-        """Save handler should be async and exist."""
-        from src.ui.pages.setup_page import SetupPage
-        import inspect
-
-        page = SetupPage(app=mock_app)
-
-        # Verify the async handler exists
-        assert hasattr(page, "_on_save"), "_on_save handler should exist"
-        assert inspect.iscoroutinefunction(page._on_save), "_on_save should be async"
-
-    @pytest.mark.asyncio
-    async def test_save_with_valid_credentials_navigates_to_login(self, mock_app):
-        """Saving valid credentials should navigate to login."""
-        from src.ui.pages.setup_page import SetupPage
-
-        mock_auth_service = AsyncMock()
-        mock_auth_service.save_app_credentials = AsyncMock(return_value=True)
-
-        with patch(
-            "src.ui.pages.setup_page.AuthService", return_value=mock_auth_service
-        ):
-            page = SetupPage(app=mock_app)
-            page.client_id_field.value = "test-client-id"
-            page.client_secret_field.value = "test-client-secret"
-
-            await page._on_save(MagicMock())
-
-            mock_auth_service.save_app_credentials.assert_called_once_with(
-                client_id="test-client-id", client_secret="test-client-secret"
-            )
-            mock_app.navigate.assert_called_with("/login")
-
-    @pytest.mark.asyncio
-    async def test_save_with_empty_fields_shows_error(self, mock_app):
-        """Saving with empty fields should show error in error_text field."""
-        from src.ui.pages.setup_page import SetupPage
-
-        page = SetupPage(app=mock_app)
-        page.client_id_field.value = ""
-        page.client_secret_field.value = ""
-
-        await page._on_save(MagicMock())
-
-        # Verify error was shown in error_text field (not navigated)
-        assert page.error_text.visible is True
-        assert "required" in page.error_text.value.lower()
-        mock_app.navigate.assert_not_called()
-
-
 class TestRefreshFlow:
     """Test the refresh data flow."""
 
@@ -388,39 +335,6 @@ class TestRefreshFlow:
             )
 
 
-class TestResetCredentialsFlow:
-    """Test the reset credentials flow."""
-
-    def test_reset_handler_is_async(self, mock_app):
-        """Reset Credentials handler should be async and exist."""
-        from src.ui.pages.settings_page import SettingsPage
-        import inspect
-
-        page = SettingsPage(app=mock_app)
-
-        # Verify the async handler exists
-        assert hasattr(
-            page, "_on_reset_credentials"
-        ), "_on_reset_credentials handler should exist"
-        assert inspect.iscoroutinefunction(
-            page._on_reset_credentials
-        ), "_on_reset_credentials should be async"
-
-    @pytest.mark.asyncio
-    async def test_reset_opens_confirmation_dialog(self, mock_app):
-        """Reset should open a confirmation dialog."""
-        from src.ui.pages.settings_page import SettingsPage
-
-        page = SettingsPage(app=mock_app)
-
-        await page._on_reset_credentials(MagicMock())
-
-        mock_app.page.show_dialog.assert_called_once()
-        dialog = mock_app.page.show_dialog.call_args[0][0]
-        assert isinstance(dialog, ft.AlertDialog)
-        assert "Reset" in dialog.title.value
-
-
 class TestAsyncHandlerWiring:
     """
     Tests that verify all async event handlers are properly wired with run_task.
@@ -452,20 +366,6 @@ class TestAsyncHandlerWiring:
             page._on_sign_out
         ), "_on_sign_out should be async"
 
-    def test_settings_reset_credentials_button(self, mock_app):
-        """Settings Reset Credentials button should use run_task."""
-        from src.ui.pages.settings_page import SettingsPage
-
-        page = SettingsPage(app=mock_app)
-        import inspect
-
-        assert hasattr(
-            page, "_on_reset_credentials"
-        ), "Page should have _on_reset_credentials method"
-        assert inspect.iscoroutinefunction(
-            page._on_reset_credentials
-        ), "_on_reset_credentials should be async"
-
     def test_login_sign_in_button(self, mock_app):
         """Login Sign In button should use run_task."""
         from src.ui.pages.login_page import LoginPage
@@ -477,16 +377,6 @@ class TestAsyncHandlerWiring:
         assert inspect.iscoroutinefunction(
             page._on_sign_in
         ), "_on_sign_in should be async"
-
-    def test_setup_save_button(self, mock_app):
-        """Setup Save button should use run_task."""
-        from src.ui.pages.setup_page import SetupPage
-
-        page = SetupPage(app=mock_app)
-        import inspect
-
-        assert hasattr(page, "_on_save"), "Page should have _on_save method"
-        assert inspect.iscoroutinefunction(page._on_save), "_on_save should be async"
 
     def test_home_refresh_button(self, mock_app):
         """Home Refresh button should use run_task."""

@@ -3,7 +3,6 @@
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Optional
 
 from google.auth.transport.requests import Request
@@ -12,7 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.app_credentials import AppCredentials
+from src.config.settings import get_settings
 from src.models.user_credential import UserCredential
 from src.utils.encryption import decrypt_value, encrypt_value
 
@@ -51,86 +50,26 @@ class AuthService:
         self._credentials: Optional[Credentials] = None
 
     async def is_app_configured(self) -> bool:
-        """Check if app OAuth credentials are configured.
+        """Check if app OAuth credentials are configured via environment variables.
 
         Returns:
             True if configured, False otherwise.
         """
-        result = await self.session.execute(
-            select(AppCredentials).where(AppCredentials.id == 1)
-        )
-        app_creds = result.scalar_one_or_none()
-        return app_creds is not None and app_creds.is_configured
+        settings = get_settings()
+        return settings.is_oauth_configured
 
-    async def save_app_credentials(
-        self,
-        client_id: str,
-        client_secret: str,
-    ) -> bool:
-        """Save OAuth client credentials to database.
-
-        Args:
-            client_id: Google OAuth client ID.
-            client_secret: Google OAuth client secret.
-
-        Returns:
-            True if saved successfully.
-        """
-        try:
-            # Encrypt credentials
-            encrypted_id = encrypt_value(client_id)
-            encrypted_secret = encrypt_value(client_secret)
-
-            # Check if exists
-            result = await self.session.execute(
-                select(AppCredentials).where(AppCredentials.id == 1)
-            )
-            app_creds = result.scalar_one_or_none()
-
-            if app_creds:
-                # Update existing
-                app_creds.client_id_encrypted = encrypted_id
-                app_creds.client_secret_encrypted = encrypted_secret
-                app_creds.is_configured = True
-            else:
-                # Create new
-                app_creds = AppCredentials(
-                    id=1,
-                    client_id_encrypted=encrypted_id,
-                    client_secret_encrypted=encrypted_secret,
-                    is_configured=True,
-                )
-                self.session.add(app_creds)
-
-            await self.session.commit()
-            logger.info("App credentials saved successfully")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to save app credentials: {e}")
-            await self.session.rollback()
-            return False
-
-    async def get_app_credentials(self) -> Optional[tuple[str, str]]:
-        """Get decrypted app credentials.
+    def get_app_credentials(self) -> Optional[tuple[str, str]]:
+        """Get app credentials from environment variables.
 
         Returns:
             Tuple of (client_id, client_secret) or None.
         """
-        result = await self.session.execute(
-            select(AppCredentials).where(AppCredentials.id == 1)
-        )
-        app_creds = result.scalar_one_or_none()
+        settings = get_settings()
 
-        if not app_creds or not app_creds.is_configured:
+        if not settings.is_oauth_configured:
             return None
 
-        try:
-            client_id = decrypt_value(app_creds.client_id_encrypted)
-            client_secret = decrypt_value(app_creds.client_secret_encrypted)
-            return client_id, client_secret
-        except Exception as e:
-            logger.error(f"Failed to decrypt app credentials: {e}")
-            return None
+        return settings.google_client_id, settings.google_client_secret
 
     async def get_user_credentials(
         self,
@@ -185,11 +124,11 @@ class AuthService:
         Returns:
             AuthResult with credentials if successful.
         """
-        app_creds = await self.get_app_credentials()
+        app_creds = self.get_app_credentials()
         if not app_creds:
             return AuthResult(
                 success=False,
-                error="App credentials not configured",
+                error="App credentials not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.",
             )
 
         client_id, client_secret = app_creds
@@ -273,7 +212,7 @@ class AuthService:
                 refresh_token = decrypt_value(user_cred.refresh_token_encrypted)
 
             # Get app credentials for client_id and client_secret
-            app_creds = await self.get_app_credentials()
+            app_creds = self.get_app_credentials()
             if not app_creds:
                 return None
 

@@ -33,44 +33,6 @@ def mock_app():
     return mock
 
 
-class TestSetupPage:
-    """Tests for SetupPage view."""
-
-    def test_setup_page_initialization(self, mock_app):
-        """Test page initializes correctly."""
-        from src.ui.pages.setup_page import SetupPage
-        page = SetupPage(app=mock_app)
-        assert page is not None
-        assert isinstance(page, ft.View)
-
-    def test_setup_page_route(self, mock_app):
-        """Test page has correct route."""
-        from src.ui.pages.setup_page import SetupPage
-        page = SetupPage(app=mock_app)
-        assert page.route == "/setup"
-
-    def test_setup_page_has_no_appbar(self, mock_app):
-        """Test setup page has no AppBar (standalone setup flow)."""
-        from src.ui.pages.setup_page import SetupPage
-        page = SetupPage(app=mock_app)
-        assert page.appbar is None
-
-    def test_setup_page_has_client_id_field(self, mock_app):
-        """Test page has client ID field."""
-        from src.ui.pages.setup_page import SetupPage
-        page = SetupPage(app=mock_app)
-        assert page.client_id_field is not None
-        assert isinstance(page.client_id_field, ft.TextField)
-
-    def test_setup_page_has_client_secret_field(self, mock_app):
-        """Test page has client secret field."""
-        from src.ui.pages.setup_page import SetupPage
-        page = SetupPage(app=mock_app)
-        assert page.client_secret_field is not None
-        assert isinstance(page.client_secret_field, ft.TextField)
-        assert page.client_secret_field.password is True
-
-
 class TestLoginPage:
     """Tests for LoginPage view."""
 

@@ -111,9 +111,9 @@ class NewsletterApp:
         async with self._session_maker() as session:
             auth_service = AuthService(session)
 
-            # Check if app is configured
+            # Check if app is configured via environment variables
             if not await auth_service.is_app_configured():
-                self.page.go("/setup")
+                self.page.go("/config-error")
                 return
 
             # Check if user is authenticated
@@ -140,11 +140,10 @@ class NewsletterApp:
         from src.ui.pages.login_page import LoginPage
         from src.ui.pages.newsletters_page import NewslettersPage
         from src.ui.pages.settings_page import SettingsPage
-        from src.ui.pages.setup_page import SetupPage
 
         # Route to appropriate page
-        if self.page.route == "/setup":
-            self.page.views.append(SetupPage(self))
+        if self.page.route == "/config-error":
+            self.page.views.append(self._create_config_error_view())
         elif self.page.route == "/login":
             self.page.views.append(LoginPage(self))
         elif self.page.route == "/home":
@@ -160,13 +159,13 @@ class NewsletterApp:
         elif self.page.route == "/settings":
             self.page.views.append(SettingsPage(self))
         else:
-            # Default to home or setup
+            # Default to home or config error
             async with self._session_maker() as session:
                 auth_service = AuthService(session)
                 if await auth_service.is_app_configured():
                     self.page.views.append(HomePage(self))
                 else:
-                    self.page.views.append(SetupPage(self))
+                    self.page.views.append(self._create_config_error_view())
 
         self.page.update()
 
@@ -180,6 +179,81 @@ class NewsletterApp:
         top_view = self.page.views[-1] if self.page.views else None
         if top_view:
             self.page.go(top_view.route)
+
+    def _create_config_error_view(self) -> ft.View:
+        """Create an error view for missing OAuth configuration.
+
+        Returns:
+            View showing configuration error message.
+        """
+        return ft.View(
+            route="/config-error",
+            controls=[
+                ft.Container(
+                    content=ft.Column(
+                        controls=[
+                            ft.Icon(
+                                ft.Icons.ERROR_OUTLINE,
+                                size=64,
+                                color=ft.Colors.ERROR,
+                            ),
+                            ft.Text(
+                                "Configuration Required",
+                                size=24,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                            ft.Container(height=16),
+                            ft.Text(
+                                "Google OAuth credentials are not configured.",
+                                size=16,
+                            ),
+                            ft.Container(height=8),
+                            ft.Text(
+                                "Please set the following environment variables:",
+                                size=14,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
+                            ),
+                            ft.Container(height=16),
+                            ft.Container(
+                                content=ft.Column(
+                                    controls=[
+                                        ft.Text(
+                                            "GOOGLE_CLIENT_ID",
+                                            font_family="monospace",
+                                            weight=ft.FontWeight.BOLD,
+                                        ),
+                                        ft.Text(
+                                            "GOOGLE_CLIENT_SECRET",
+                                            font_family="monospace",
+                                            weight=ft.FontWeight.BOLD,
+                                        ),
+                                    ],
+                                    spacing=4,
+                                ),
+                                padding=16,
+                                bgcolor=ft.Colors.SURFACE_VARIANT,
+                                border_radius=8,
+                            ),
+                            ft.Container(height=16),
+                            ft.Text(
+                                "Get these from Google Cloud Console:",
+                                size=14,
+                                color=ft.Colors.ON_SURFACE_VARIANT,
+                            ),
+                            ft.TextButton(
+                                "console.cloud.google.com/apis/credentials",
+                                url="https://console.cloud.google.com/apis/credentials",
+                            ),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),
+                    expand=True,
+                    alignment=ft.alignment.center,
+                    padding=32,
+                )
+            ],
+        )
 
     def get_session(self):
         """Get an async session for database operations.

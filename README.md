@@ -54,7 +54,7 @@ Before using the app, you need to create OAuth credentials in Google Cloud Conso
 
 5. **Copy Credentials**
    - Copy the **Client ID** and **Client Secret**
-   - You'll enter these in the app's Setup page on first launch
+   - Add them to your `.env` file as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
 
 ## Installation
 
@@ -71,8 +71,10 @@ uv sync
 # Copy environment file
 cp .env.example .env
 
-# Edit .env with your settings
-# IMPORTANT: Change ENCRYPTION_KEY in production!
+# Edit .env with your settings:
+# - GOOGLE_CLIENT_ID: Your Google OAuth Client ID
+# - GOOGLE_CLIENT_SECRET: Your Google OAuth Client Secret
+# - ENCRYPTION_KEY: Change this in production!
 ```
 
 ### Running Locally
@@ -102,8 +104,7 @@ cp .env.example .env
    FLET_WEB_APP=true uv run python -m src.main
    ```
 
-4. **Open the app** and complete setup:
-   - Enter your Google OAuth Client ID and Client Secret
+4. **Open the app** and sign in:
    - Sign in with your Gmail account
    - Add newsletters by selecting Gmail labels
 
@@ -191,6 +192,8 @@ If you encounter missing module errors at runtime, add them via `--hidden-import
 | `DATABASE_URL` | PostgreSQL connection URL | postgresql+asyncpg://... |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker) | - |
 | `ENCRYPTION_KEY` | Key for encrypting credentials in DB | - |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID (required) | - |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret (required) | - |
 | `FLET_HOST` | Host to bind to | 127.0.0.1 |
 | `FLET_PORT` | Port to listen on | 8550 |
 | `FLET_WEB_APP` | Run as web app (true/false) | false |
@@ -251,6 +254,7 @@ The project includes a Makefile for common tasks:
 ```bash
 make help              # Show all available commands
 make install           # Install dependencies
+make check-env         # Verify required environment variables
 make run               # Run desktop app
 make run-web           # Run web app
 make run-web-debug     # Run web app for debugging with Claude
@@ -329,9 +333,9 @@ uv run mypy src/
 
 ## Security Notes
 
-- OAuth credentials (both client secrets and user tokens) are stored encrypted in PostgreSQL
-- The `ENCRYPTION_KEY` environment variable is used for encryption
-- **Never commit `.env` files or expose your encryption key**
+- Google OAuth client credentials (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`) are read from environment variables
+- User OAuth tokens are stored encrypted in PostgreSQL using the `ENCRYPTION_KEY`
+- **Never commit `.env` files or expose your credentials and encryption key**
 - In production, use a strong, unique encryption key (32+ characters)
 
 ## Troubleshooting

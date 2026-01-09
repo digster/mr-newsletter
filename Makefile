@@ -1,8 +1,9 @@
-.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate help
+.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate check-env help
 
 help:
 	@echo "Available commands:"
 	@echo "  make install           - Install dependencies"
+	@echo "  make check-env         - Verify required environment variables"
 	@echo "  make run               - Run desktop app"
 	@echo "  make run-web           - Run web app"
 	@echo "  make run-web-debug     - Run web app for debugging with Claude"
@@ -19,6 +20,12 @@ help:
 
 install:
 	uv sync
+
+check-env:
+	@echo "Checking required environment variables..."
+	@if [ -z "$$GOOGLE_CLIENT_ID" ]; then echo "ERROR: GOOGLE_CLIENT_ID is not set"; exit 1; fi
+	@if [ -z "$$GOOGLE_CLIENT_SECRET" ]; then echo "ERROR: GOOGLE_CLIENT_SECRET is not set"; exit 1; fi
+	@echo "All required environment variables are set."
 
 run:
 	uv run python -m src.main

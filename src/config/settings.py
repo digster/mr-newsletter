@@ -42,6 +42,14 @@ class Settings(BaseSettings):
         description="32-byte key for encrypting credentials in database",
     )
 
+    # Google OAuth - Required for Gmail API access
+    google_client_id: str = Field(
+        description="Google OAuth Client ID from Google Cloud Console",
+    )
+    google_client_secret: str = Field(
+        description="Google OAuth Client Secret from Google Cloud Console",
+    )
+
     # Flet UI
     flet_host: str = Field(default="127.0.0.1")
     flet_port: int = Field(default=8550)
@@ -97,6 +105,11 @@ class Settings(BaseSettings):
     def sync_database_url(self) -> str:
         """Get synchronous database URL for Alembic migrations."""
         return self.database_url.replace("+asyncpg", "")
+
+    @property
+    def is_oauth_configured(self) -> bool:
+        """Check if Google OAuth credentials are configured."""
+        return bool(self.google_client_id and self.google_client_secret)
 
 
 @lru_cache

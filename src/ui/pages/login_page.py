@@ -74,11 +74,6 @@ class LoginPage(ft.View):
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
                     ),
-                    ft.Container(height=40),
-                    ft.TextButton(
-                        "Change OAuth Credentials",
-                        on_click=lambda _: self.app.navigate("/setup"),
-                    ),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),

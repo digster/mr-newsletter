@@ -231,14 +231,16 @@ class NewslettersPage(ft.View):
                         fetch_interval=interval,
                     )
 
-                self.app.page.close(dialog)
+                dialog.open = False
+                self.app.page.update()
                 self.app.show_snackbar(f"Newsletter '{name}' created")
                 await self._load_newsletters()
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.close(dialog)
+            dialog.open = False
+            self.app.page.update()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Add Newsletter"),
@@ -302,14 +304,16 @@ class NewslettersPage(ft.View):
                         fetch_interval=interval,
                     )
 
-                self.app.page.close(dialog)
+                dialog.open = False
+                self.app.page.update()
                 self.app.show_snackbar("Newsletter updated")
                 await self._load_newsletters()
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.close(dialog)
+            dialog.open = False
+            self.app.page.update()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Edit Newsletter"),
@@ -346,14 +350,16 @@ class NewslettersPage(ft.View):
                     service = NewsletterService(session=session)
                     await service.delete_newsletter(newsletter.id)
 
-                self.app.page.close(dialog)
+                dialog.open = False
+                self.app.page.update()
                 self.app.show_snackbar(f"Newsletter '{newsletter.name}' deleted")
                 await self._load_newsletters()
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.close(dialog)
+            dialog.open = False
+            self.app.page.update()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Delete Newsletter"),

@@ -225,7 +225,6 @@ class NewsletterService:
         """
         return Email(
             gmail_message_id=gmail_msg.id,
-            gmail_thread_id=gmail_msg.thread_id,
             subject=gmail_msg.subject,
             sender_name=gmail_msg.sender_name,
             sender_email=gmail_msg.sender_email,

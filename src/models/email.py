@@ -35,10 +35,6 @@ class Email(Base, TimestampMixin):
         nullable=False,
         unique=True,
     )
-    gmail_thread_id: Mapped[Optional[str]] = mapped_column(
-        String(255),
-        nullable=True,
-    )
 
     # Email metadata
     subject: Mapped[str] = mapped_column(String(500), nullable=False)

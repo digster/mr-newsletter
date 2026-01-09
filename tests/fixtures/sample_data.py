@@ -60,7 +60,6 @@ def create_email(
     id: int = 1,
     newsletter_id: int = 1,
     gmail_message_id: Optional[str] = None,
-    gmail_thread_id: Optional[str] = None,
     subject: str = "Test Email Subject",
     sender_name: str = "Test Sender",
     sender_email: str = "sender@test.com",
@@ -79,7 +78,6 @@ def create_email(
         id: Email ID.
         newsletter_id: Associated newsletter ID.
         gmail_message_id: Gmail message ID.
-        gmail_thread_id: Gmail thread ID.
         subject: Email subject.
         sender_name: Sender display name.
         sender_email: Sender email address.
@@ -101,7 +99,6 @@ def create_email(
         id=id,
         newsletter_id=newsletter_id,
         gmail_message_id=gmail_message_id or f"msg_{id}",
-        gmail_thread_id=gmail_thread_id or f"thread_{id}",
         subject=subject,
         sender_name=sender_name,
         sender_email=sender_email,

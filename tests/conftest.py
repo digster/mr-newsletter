@@ -77,7 +77,6 @@ def sample_email_data():
 
     return {
         "gmail_message_id": "msg_123456",
-        "gmail_thread_id": "thread_123",
         "subject": "Test Newsletter Issue #1",
         "sender_name": "Newsletter Bot",
         "sender_email": "newsletter@example.com",

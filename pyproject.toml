@@ -10,6 +10,7 @@ authors = [{ name = "digster" }]
 dependencies = [
     # UI Framework
     "flet[all]>=0.80.0",
+    "flet-webview>=0.1.0",
 
     # Google APIs
     "google-api-python-client>=2.150.0",
@@ -34,7 +35,7 @@ dependencies = [
     "cryptography>=43.0.0",
 
     # HTML Processing
-    "bleach>=6.0.0",
+    "bleach[css]>=6.0.0",
     "beautifulsoup4>=4.12.3",
     "html2text>=2024.2.26",
 

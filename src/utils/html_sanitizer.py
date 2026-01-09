@@ -3,6 +3,7 @@
 from typing import Optional
 
 import bleach
+from bleach.css_sanitizer import CSSSanitizer
 
 # Allowed HTML tags for email content
 ALLOWED_TAGS = [
@@ -12,6 +13,7 @@ ALLOWED_TAGS = [
     "address",
     "b",
     "blockquote",
+    "body",
     "br",
     "center",
     "code",
@@ -29,12 +31,16 @@ ALLOWED_TAGS = [
     "h4",
     "h5",
     "h6",
+    "head",
     "hr",
+    "html",
     "i",
     "img",
     "ins",
     "kbd",
     "li",
+    "link",
+    "meta",
     "ol",
     "p",
     "pre",
@@ -45,6 +51,7 @@ ALLOWED_TAGS = [
     "span",
     "strike",
     "strong",
+    "style",
     "sub",
     "sup",
     "table",
@@ -53,6 +60,7 @@ ALLOWED_TAGS = [
     "tfoot",
     "th",
     "thead",
+    "title",
     "tr",
     "tt",
     "u",
@@ -64,12 +72,15 @@ ALLOWED_TAGS = [
 ALLOWED_ATTRIBUTES = {
     "*": ["class", "id", "style"],
     "a": ["href", "title", "target", "rel"],
+    "body": ["bgcolor", "text", "link", "vlink", "alink"],
     "img": ["src", "alt", "title", "width", "height"],
     "font": ["color", "face", "size"],
-    "table": ["border", "cellpadding", "cellspacing", "width"],
-    "td": ["colspan", "rowspan", "width", "align", "valign"],
-    "th": ["colspan", "rowspan", "width", "align", "valign"],
-    "tr": ["align", "valign"],
+    "link": ["rel", "type", "href"],
+    "meta": ["charset", "name", "content", "http-equiv"],
+    "table": ["border", "cellpadding", "cellspacing", "width", "bgcolor"],
+    "td": ["colspan", "rowspan", "width", "align", "valign", "bgcolor"],
+    "th": ["colspan", "rowspan", "width", "align", "valign", "bgcolor"],
+    "tr": ["align", "valign", "bgcolor"],
     "div": ["align"],
     "p": ["align"],
 }
@@ -122,11 +133,15 @@ def sanitize_html(html_content: Optional[str]) -> str:
     if not html_content:
         return ""
 
+    # Configure CSS sanitizer with allowed properties
+    css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_STYLES)
+
     # Clean the HTML
     cleaned = bleach.clean(
         html_content,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
+        css_sanitizer=css_sanitizer,
         strip=True,
     )
 
@@ -176,3 +191,88 @@ def html_to_safe_content(html_content: Optional[str]) -> str:
         {sanitized}
     </div>
     """
+
+
+def sanitize_html_for_webview(html_content: Optional[str]) -> str:
+    """Sanitize HTML for WebView rendering, preserving styles.
+
+    This is a lighter sanitization that preserves <style> tags and their
+    content for proper rendering in a sandboxed WebView.
+
+    Args:
+        html_content: Raw HTML content from email.
+
+    Returns:
+        Sanitized HTML suitable for WebView rendering.
+    """
+    if not html_content:
+        return ""
+
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Remove dangerous tags (script, iframe, object, embed, form)
+    dangerous_tags = ["script", "iframe", "object", "embed", "form", "input", "button"]
+    for tag in soup.find_all(dangerous_tags):
+        tag.decompose()
+
+    # Remove dangerous attributes
+    dangerous_attrs = ["onclick", "onload", "onerror", "onmouseover", "onfocus", "onblur"]
+    for tag in soup.find_all(True):
+        for attr in dangerous_attrs:
+            if tag.has_attr(attr):
+                del tag[attr]
+
+    # Add security attributes to links
+    for link in soup.find_all("a"):
+        link["target"] = "_blank"
+        link["rel"] = "noopener noreferrer"
+
+    # Return as string with proper HTML structure
+    result = str(soup)
+
+    # Ensure we have a complete HTML document for WebView
+    if "<html" not in result.lower():
+        result = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 16px;
+            margin: 0;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }}
+        a {{ color: #6db3f2; }}
+        img {{
+            max-width: 100%;
+            height: auto;
+        }}
+        /* Hide broken images gracefully */
+        img[src]::before {{
+            content: '';
+            display: block;
+        }}
+    </style>
+</head>
+<body>
+{result}
+</body>
+</html>"""
+    else:
+        # For emails with existing HTML structure, inject CSS to handle broken images
+        result = result.replace(
+            "</head>",
+            """<style>
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>""",
+            1,
+        )
+
+    return result

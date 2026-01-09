@@ -1,11 +1,13 @@
 """Email reader page for viewing email content."""
 
+import base64
 from typing import TYPE_CHECKING, Optional
 
 import flet as ft
+from flet_webview import WebView
 
 from src.services.email_service import EmailService
-from src.utils.html_sanitizer import html_to_safe_content
+from src.utils.html_sanitizer import sanitize_html_for_webview
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -121,13 +123,26 @@ class EmailReaderPage(ft.View):
         # Format date
         date_str = self.email.received_at.strftime("%B %d, %Y at %I:%M %p")
 
-        # Get HTML content
+        # Get HTML content and sanitize for WebView
         html_content = self.email.body_html or ""
         if html_content:
-            safe_html = html_to_safe_content(html_content)
+            safe_html = sanitize_html_for_webview(html_content)
         else:
-            # Fallback to text
-            safe_html = f"<pre>{self.email.body_text or 'No content'}</pre>"
+            # Fallback to text - wrap in minimal HTML
+            safe_html = sanitize_html_for_webview(
+                f"<pre>{self.email.body_text or 'No content'}</pre>"
+            )
+
+        # Create data URL with base64-encoded HTML
+        html_bytes = safe_html.encode("utf-8")
+        html_base64 = base64.b64encode(html_bytes).decode("ascii")
+        data_url = f"data:text/html;base64,{html_base64}"
+
+        # Create WebView with data URL
+        email_webview = WebView(
+            url=data_url,
+            expand=True,
+        )
 
         return ft.Column(
             [
@@ -182,37 +197,14 @@ class EmailReaderPage(ft.View):
                 ),
                 ft.Divider(),
                 ft.Container(height=16),
-                # Email body - using WebView for HTML
+                # Email body - render in WebView
                 ft.Container(
-                    content=ft.Markdown(
-                        self.email.body_text or "No content",
-                        selectable=True,
-                        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
-                    )
-                    if not self.email.body_html
-                    else ft.Text(
-                        # For HTML emails, we'll show a simplified version
-                        # Full HTML rendering requires WebView which has platform limitations
-                        self._strip_html_tags(self.email.body_html or ""),
-                        selectable=True,
-                    ),
+                    content=email_webview,
                     expand=True,
+                    height=600,
                 ),
             ],
         )
-
-    def _strip_html_tags(self, html: str) -> str:
-        """Strip HTML tags for basic text display."""
-        from html import unescape
-        import re
-
-        # Remove HTML tags
-        clean = re.sub(r"<[^>]+>", " ", html)
-        # Decode HTML entities
-        clean = unescape(clean)
-        # Clean up whitespace
-        clean = re.sub(r"\s+", " ", clean).strip()
-        return clean
 
     def _go_back(self, e: Optional[ft.ControlEvent]) -> None:
         """Go back to email list."""

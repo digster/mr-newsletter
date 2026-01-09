@@ -340,16 +340,39 @@ class AuthService:
         Returns:
             True if updated.
         """
+        if old_email == new_email:
+            return True
+
         try:
+            # Get the placeholder record
             result = await self.session.execute(
                 select(UserCredential).where(UserCredential.user_email == old_email)
             )
-            user_cred = result.scalar_one_or_none()
-            if user_cred:
-                user_cred.user_email = new_email
-                await self.session.commit()
-                return True
-            return False
+            placeholder_cred = result.scalar_one_or_none()
+
+            if not placeholder_cred:
+                return False
+
+            # Check if the new email already exists
+            result = await self.session.execute(
+                select(UserCredential).where(UserCredential.user_email == new_email)
+            )
+            existing_cred = result.scalar_one_or_none()
+
+            if existing_cred:
+                # Transfer fresh credentials to existing record
+                existing_cred.access_token_encrypted = placeholder_cred.access_token_encrypted
+                existing_cred.refresh_token_encrypted = placeholder_cred.refresh_token_encrypted
+                existing_cred.token_expiry = placeholder_cred.token_expiry
+                existing_cred.scopes = placeholder_cred.scopes
+                # Delete placeholder record
+                await self.session.delete(placeholder_cred)
+            else:
+                # Simply update the email
+                placeholder_cred.user_email = new_email
+
+            await self.session.commit()
+            return True
         except Exception as e:
             logger.error(f"Failed to update user email: {e}")
             await self.session.rollback()

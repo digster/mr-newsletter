@@ -94,40 +94,56 @@ class EmailListPage(ft.View):
                     self.newsletter_id, limit=100
                 )
 
-                # Process emails inside session context to avoid detached object issues
-                self.emails_list.controls.clear()
+                # Extract email data while still in session context
+                # to avoid SQLAlchemy detached object issues
+                email_data = []
+                for email in emails:
+                    email_data.append({
+                        "id": email.id,
+                        "subject": email.subject,
+                        "sender_name": email.sender_name,
+                        "sender_email": email.sender_email,
+                        "snippet": email.snippet,
+                        "received_at": email.received_at,
+                        "is_read": email.is_read,
+                        "is_starred": email.is_starred,
+                    })
 
-                if emails:
-                    for email in emails:
-                        tile = self._create_email_tile(email)
-                        self.emails_list.controls.append(tile)
-                else:
-                    self.emails_list.controls.append(
-                        ft.Container(
-                            content=ft.Column(
-                                [
-                                    ft.Icon(
-                                        ft.Icons.INBOX_OUTLINED,
-                                        size=48,
-                                        color=ft.Colors.ON_SURFACE_VARIANT,
+            # Update controls OUTSIDE the session context
+            # Flet control updates inside async with context may not propagate properly
+            self.emails_list.controls.clear()
+
+            if email_data:
+                for data in email_data:
+                    tile = self._create_email_tile(data)
+                    self.emails_list.controls.append(tile)
+            else:
+                self.emails_list.controls.append(
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Icon(
+                                    ft.Icons.INBOX_OUTLINED,
+                                    size=48,
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
+                                ),
+                                ft.Text(
+                                    "No emails yet",
+                                    color=ft.Colors.ON_SURFACE_VARIANT,
+                                ),
+                                ft.TextButton(
+                                    "Fetch Now",
+                                    on_click=lambda e: self.app.page.run_task(
+                                        self._on_refresh, e
                                     ),
-                                    ft.Text(
-                                        "No emails yet",
-                                        color=ft.Colors.ON_SURFACE_VARIANT,
-                                    ),
-                                    ft.TextButton(
-                                        "Fetch Now",
-                                        on_click=lambda e: self.app.page.run_task(
-                                            self._on_refresh, e
-                                        ),
-                                    ),
-                                ],
-                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                            ),
-                            padding=48,
-                            alignment=ft.Alignment.CENTER,
-                        )
+                                ),
+                            ],
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        ),
+                        padding=48,
+                        alignment=ft.Alignment.CENTER,
                     )
+                )
 
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
@@ -135,21 +151,38 @@ class EmailListPage(ft.View):
             self.loading.visible = False
             self.app.page.update()
 
-    def _create_email_tile(self, email) -> ft.Control:
-        """Create a list tile for an email."""
-        # Format date
-        date_str = email.received_at.strftime("%b %d, %Y")
+    def _create_email_tile(self, email: dict) -> ft.Control:
+        """Create a list tile for an email.
+
+        Args:
+            email: Dict with email data (id, subject, sender_name, sender_email,
+                   snippet, received_at, is_read, is_starred).
+        """
+        # Extract all values to local variables first
+        email_id = email["id"]
+        subject = email["subject"]
+        sender = email["sender_name"] or email["sender_email"]
+        snippet = email["snippet"] or ""
+        date_str = email["received_at"].strftime("%b %d, %Y")
+        is_read = email["is_read"]
+        is_starred = email["is_starred"]
+
+        # Compute styled values
+        star_icon = ft.Icons.STAR if is_starred else ft.Icons.STAR_BORDER
+        star_color = ft.Colors.AMBER if is_starred else ft.Colors.OUTLINE
+        subject_weight = ft.FontWeight.NORMAL if is_read else ft.FontWeight.BOLD
+        unread_indicator_color = None if is_read else ft.Colors.PRIMARY
 
         return ft.Container(
             content=ft.Row(
                 [
                     ft.Container(
                         content=ft.Icon(
-                            ft.Icons.STAR if email.is_starred else ft.Icons.STAR_BORDER,
-                            color=ft.Colors.AMBER if email.is_starred else None,
+                            star_icon,
+                            color=star_color,
                             size=20,
                         ),
-                        on_click=lambda _, eid=email.id: self.app.page.run_task(
+                        on_click=lambda _, eid=email_id: self.app.page.run_task(
                             self._toggle_star, eid
                         ),
                     ),
@@ -158,29 +191,27 @@ class EmailListPage(ft.View):
                         width=8,
                         height=8,
                         border_radius=4,
-                        bgcolor=ft.Colors.PRIMARY if not email.is_read else None,
+                        bgcolor=unread_indicator_color,
                     ),
                     ft.Container(width=12),
                     ft.Column(
                         [
                             ft.Text(
-                                email.subject,
+                                subject,
                                 size=14,
-                                weight=ft.FontWeight.BOLD
-                                if not email.is_read
-                                else ft.FontWeight.NORMAL,
+                                weight=subject_weight,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
                             ft.Text(
-                                email.sender_name or email.sender_email,
+                                sender,
                                 size=12,
                                 color=ft.Colors.ON_SURFACE_VARIANT,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
                             ),
                             ft.Text(
-                                email.snippet or "",
+                                snippet,
                                 size=12,
                                 color=ft.Colors.ON_SURFACE_VARIANT,
                                 max_lines=1,
@@ -188,7 +219,6 @@ class EmailListPage(ft.View):
                             ),
                         ],
                         spacing=2,
-                        expand=True,
                     ),
                     ft.Text(
                         date_str,
@@ -199,8 +229,7 @@ class EmailListPage(ft.View):
             ),
             padding=12,
             border_radius=8,
-            on_click=lambda _, eid=email.id: self.app.navigate(f"/email/{eid}"),
-            bgcolor=ft.Colors.SURFACE_VARIANT if not email.is_read else None,
+            on_click=lambda _, eid=email_id: self.app.navigate(f"/email/{eid}"),
         )
 
     async def _on_refresh(self, e: ft.ControlEvent) -> None:

@@ -12,6 +12,8 @@ Always run tests after changes, to test integrity.
 
 For ui related changes, test the changes using an actual browser instance and the mcp extension.
 
+Always use the app in web mode when debugging not the desktop mode.
+
 Always ask before removing or changing any major existing functionality that is out of the scope of the request before working on it.
 
 UI and UX should be based on modern standards.

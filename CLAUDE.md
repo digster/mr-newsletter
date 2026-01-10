@@ -23,3 +23,5 @@ Everything should be clean, performant and adhering to modern coding standards.
 After every fix generate a git commit message that can be used by the user.
 
 Ask clarifying questions where necessary.
+
+**Very Important** - Whatever we make, make sure to never have something which will delete emails from the original email inbox. Inform me if we are going in that direction.

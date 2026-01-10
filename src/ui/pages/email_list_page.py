@@ -1,5 +1,6 @@
-"""Email list page for a newsletter."""
+"""Email list page for a newsletter with sidebar navigation."""
 
+import asyncio
 from typing import TYPE_CHECKING
 
 import flet as ft
@@ -7,66 +8,248 @@ import flet as ft
 from src.services.email_service import EmailService
 from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
+from src.ui.components import EmailListItem, Sidebar
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
 
 
+class FilterTab(ft.Container):
+    """Filter tab button component."""
+
+    def __init__(
+        self,
+        label: str,
+        filter_key: str,
+        is_active: bool = False,
+        on_click=None,
+    ):
+        self.filter_key = filter_key
+        self._on_click = on_click
+
+        super().__init__(
+            content=ft.Text(
+                label,
+                size=Typography.BODY_SMALL_SIZE,
+                weight=ft.FontWeight.W_500 if is_active else ft.FontWeight.W_400,
+                color=Colors.Light.ACCENT if is_active else Colors.Light.TEXT_SECONDARY,
+            ),
+            padding=ft.padding.symmetric(horizontal=Spacing.SM, vertical=Spacing.XS),
+            border_radius=BorderRadius.SM,
+            bgcolor=Colors.Light.ACCENT_MUTED if is_active else None,
+            on_click=self._handle_click,
+            on_hover=self._on_hover if not is_active else None,
+        )
+
+    def _handle_click(self, e: ft.ControlEvent) -> None:
+        if self._on_click:
+            self._on_click(self.filter_key)
+
+    def _on_hover(self, e: ft.HoverEvent) -> None:
+        self.bgcolor = Colors.Light.HOVER if e.data == "true" else None
+        self.update()
+
+
 class EmailListPage(ft.View):
-    """Page showing emails for a newsletter."""
+    """Page showing emails for a newsletter with sidebar."""
 
     def __init__(self, app: "NewsletterApp", newsletter_id: int):
-        super().__init__(route=f"/newsletter/{newsletter_id}")
+        super().__init__(route=f"/newsletter/{newsletter_id}", padding=0, spacing=0)
         self.app = app
         self.newsletter_id = newsletter_id
         self.newsletter = None
+        self.newsletters = []
+        self.current_filter = "all"  # all, unread, starred
 
         self.emails_list = ft.ListView(
             expand=True,
-            spacing=4,
+            spacing=0,
+            padding=0,
         )
-        self.loading = ft.ProgressRing(visible=False)
-        self.title_text = ft.Text("Loading...", size=20, weight=ft.FontWeight.BOLD)
 
-        self.appbar = ft.AppBar(
-            leading=ft.IconButton(
-                icon=ft.Icons.ARROW_BACK,
-                on_click=lambda _: self.app.navigate("/home"),
-            ),
-            title=self.title_text,
-            actions=[
-                ft.IconButton(
-                    icon=ft.Icons.REFRESH,
-                    tooltip="Fetch new emails",
-                    on_click=lambda e: self.app.page.run_task(
-                        self._on_refresh, e
+        self.loading = ft.ProgressRing(
+            visible=False,
+            width=20,
+            height=20,
+            stroke_width=2,
+            color=Colors.Light.ACCENT,
+        )
+
+        self.title_text = ft.Text(
+            "Loading...",
+            size=Typography.H2_SIZE,
+            weight=ft.FontWeight.W_600,
+            color=Colors.Light.TEXT_PRIMARY,
+        )
+
+        self.sidebar = Sidebar(
+            current_route=f"/newsletter/{newsletter_id}",
+            newsletters=[],
+            on_navigate=self._handle_navigate,
+        )
+
+        self.empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(
+                        ft.Icons.INBOX_OUTLINED,
+                        size=48,
+                        color=Colors.Light.TEXT_TERTIARY,
                     ),
-                ),
+                    ft.Container(height=Spacing.MD),
+                    ft.Text(
+                        "No emails yet",
+                        size=Typography.H4_SIZE,
+                        weight=ft.FontWeight.W_500,
+                        color=Colors.Light.TEXT_SECONDARY,
+                    ),
+                    ft.Container(height=Spacing.XS),
+                    ft.Text(
+                        "Fetch emails to get started",
+                        size=Typography.BODY_SIZE,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.LG),
+                    ft.ElevatedButton(
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.Icons.REFRESH, size=18, color="#FFFFFF"),
+                                ft.Container(width=Spacing.XS),
+                                ft.Text("Fetch Now"),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        ),
+                        bgcolor=Colors.Light.ACCENT,
+                        color="#FFFFFF",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                        ),
+                        on_click=lambda e: self.app.page.run_task(self._on_refresh, e),
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            expand=True,
+            alignment=ft.alignment.Alignment.CENTER,
+            visible=False,
+        )
+
+        self.filter_tabs = ft.Row(
+            [
+                FilterTab("All", "all", is_active=True, on_click=self._on_filter_change),
+                FilterTab("Unread", "unread", on_click=self._on_filter_change),
+                FilterTab("Starred", "starred", on_click=self._on_filter_change),
             ],
+            spacing=Spacing.XXS,
         )
 
         self.controls = [self._build_content()]
 
-        # Load emails
+        # Load data
         self.app.page.run_task(self._load_data)
 
     def _build_content(self) -> ft.Control:
-        """Build page content."""
-        return ft.Container(
-            content=ft.Column(
-                [
-                    ft.Row(
+        """Build page content with sidebar."""
+        return ft.Row(
+            [
+                # Sidebar
+                self.sidebar,
+                # Main content
+                ft.Container(
+                    content=ft.Column(
                         [
-                            self.loading,
+                            # Header
+                            ft.Container(
+                                content=ft.Row(
+                                    [
+                                        ft.IconButton(
+                                            icon=ft.Icons.ARROW_BACK,
+                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_size=20,
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                            ),
+                                            on_click=lambda _: self.app.navigate(
+                                                "/home"
+                                            ),
+                                        ),
+                                        ft.Container(width=Spacing.XS),
+                                        self.title_text,
+                                        ft.Container(expand=True),
+                                        self.loading,
+                                        ft.Container(width=Spacing.SM),
+                                        ft.IconButton(
+                                            icon=ft.Icons.REFRESH,
+                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_size=20,
+                                            tooltip="Fetch new emails",
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                            ),
+                                            on_click=lambda e: self.app.page.run_task(
+                                                self._on_refresh, e
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                                padding=ft.padding.only(bottom=Spacing.MD),
+                            ),
+                            # Filter tabs
+                            ft.Container(
+                                content=self.filter_tabs,
+                                padding=ft.padding.only(bottom=Spacing.MD),
+                            ),
+                            # Divider
+                            ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                            # Email list
+                            ft.Container(
+                                content=ft.Stack(
+                                    [
+                                        self.emails_list,
+                                        self.empty_state,
+                                    ],
+                                    expand=True,
+                                ),
+                                expand=True,
+                            ),
                         ],
+                        expand=True,
                     ),
-                    self.emails_list,
-                ],
-                expand=True,
-            ),
-            padding=24,
+                    padding=Spacing.LG,
+                    expand=True,
+                    bgcolor=Colors.Light.BG_SECONDARY,
+                ),
+            ],
             expand=True,
+            spacing=0,
         )
+
+    def _handle_navigate(self, route: str) -> None:
+        """Handle navigation from sidebar."""
+        self.app.navigate(route)
+
+    def _on_filter_change(self, filter_key: str) -> None:
+        """Handle filter tab change."""
+        self.current_filter = filter_key
+        # Update tab states
+        for tab in self.filter_tabs.controls:
+            is_active = tab.filter_key == filter_key
+            tab.content.weight = (
+                ft.FontWeight.W_500 if is_active else ft.FontWeight.W_400
+            )
+            tab.content.color = (
+                Colors.Light.ACCENT if is_active else Colors.Light.TEXT_SECONDARY
+            )
+            tab.bgcolor = Colors.Light.ACCENT_MUTED if is_active else None
+            tab.on_hover = None if is_active else tab._on_hover
+        self.filter_tabs.update()
+        # Reload with filter
+        self.app.page.run_task(self._load_data)
 
     async def _load_data(self) -> None:
         """Load newsletter and emails."""
@@ -75,8 +258,11 @@ class EmailListPage(ft.View):
 
         try:
             async with self.app.get_session() as session:
-                # Load newsletter
+                # Load all newsletters for sidebar
                 newsletter_service = NewsletterService(session=session)
+                self.newsletters = await newsletter_service.get_all_newsletters()
+
+                # Load current newsletter
                 self.newsletter = await newsletter_service.get_newsletter(
                     self.newsletter_id
                 )
@@ -88,62 +274,51 @@ class EmailListPage(ft.View):
 
                 self.title_text.value = self.newsletter.name
 
-                # Load emails
+                # Load emails with filter
                 email_service = EmailService(session)
-                emails = await email_service.get_emails_for_newsletter(
-                    self.newsletter_id, limit=100
-                )
+                if self.current_filter == "unread":
+                    emails = await email_service.get_emails_for_newsletter(
+                        self.newsletter_id, limit=100, unread_only=True
+                    )
+                elif self.current_filter == "starred":
+                    emails = await email_service.get_emails_for_newsletter(
+                        self.newsletter_id, limit=100, starred_only=True
+                    )
+                else:
+                    emails = await email_service.get_emails_for_newsletter(
+                        self.newsletter_id, limit=100
+                    )
 
                 # Extract email data while still in session context
-                # to avoid SQLAlchemy detached object issues
                 email_data = []
                 for email in emails:
-                    email_data.append({
-                        "id": email.id,
-                        "subject": email.subject,
-                        "sender_name": email.sender_name,
-                        "sender_email": email.sender_email,
-                        "snippet": email.snippet,
-                        "received_at": email.received_at,
-                        "is_read": email.is_read,
-                        "is_starred": email.is_starred,
-                    })
+                    email_data.append(
+                        {
+                            "id": email.id,
+                            "subject": email.subject,
+                            "sender_name": email.sender_name,
+                            "sender_email": email.sender_email,
+                            "snippet": email.snippet,
+                            "received_at": email.received_at,
+                            "is_read": email.is_read,
+                            "is_starred": email.is_starred,
+                        }
+                    )
 
-            # Update controls OUTSIDE the session context
-            # Flet control updates inside async with context may not propagate properly
+            # Update sidebar
+            self.sidebar.update_newsletters(self.newsletters)
+            self.sidebar.update_route(f"/newsletter/{self.newsletter_id}")
+
+            # Update email list
             self.emails_list.controls.clear()
 
             if email_data:
+                self.empty_state.visible = False
                 for data in email_data:
-                    tile = self._create_email_tile(data)
-                    self.emails_list.controls.append(tile)
+                    item = self._create_email_item(data)
+                    self.emails_list.controls.append(item)
             else:
-                self.emails_list.controls.append(
-                    ft.Container(
-                        content=ft.Column(
-                            [
-                                ft.Icon(
-                                    ft.Icons.INBOX_OUTLINED,
-                                    size=48,
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                                ft.Text(
-                                    "No emails yet",
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                                ft.TextButton(
-                                    "Fetch Now",
-                                    on_click=lambda e: self.app.page.run_task(
-                                        self._on_refresh, e
-                                    ),
-                                ),
-                            ],
-                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        ),
-                        padding=48,
-                        alignment=ft.Alignment.CENTER,
-                    )
-                )
+                self.empty_state.visible = True
 
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
@@ -151,85 +326,20 @@ class EmailListPage(ft.View):
             self.loading.visible = False
             self.app.page.update()
 
-    def _create_email_tile(self, email: dict) -> ft.Control:
-        """Create a list tile for an email.
-
-        Args:
-            email: Dict with email data (id, subject, sender_name, sender_email,
-                   snippet, received_at, is_read, is_starred).
-        """
-        # Extract all values to local variables first
+    def _create_email_item(self, email: dict) -> ft.Control:
+        """Create an email list item."""
         email_id = email["id"]
-        subject = email["subject"]
-        sender = email["sender_name"] or email["sender_email"]
-        snippet = email["snippet"] or ""
-        date_str = email["received_at"].strftime("%b %d, %Y")
-        is_read = email["is_read"]
-        is_starred = email["is_starred"]
-
-        # Compute styled values
-        star_icon = ft.Icons.STAR if is_starred else ft.Icons.STAR_BORDER
-        star_color = ft.Colors.AMBER if is_starred else ft.Colors.OUTLINE
-        subject_weight = ft.FontWeight.NORMAL if is_read else ft.FontWeight.BOLD
-        unread_indicator_color = None if is_read else ft.Colors.PRIMARY
-
-        return ft.Container(
-            content=ft.Row(
-                [
-                    ft.Container(
-                        content=ft.Icon(
-                            star_icon,
-                            color=star_color,
-                            size=20,
-                        ),
-                        on_click=lambda _, eid=email_id: self.app.page.run_task(
-                            self._toggle_star, eid
-                        ),
-                    ),
-                    ft.Container(width=8),
-                    ft.Container(
-                        width=8,
-                        height=8,
-                        border_radius=4,
-                        bgcolor=unread_indicator_color,
-                    ),
-                    ft.Container(width=12),
-                    ft.Column(
-                        [
-                            ft.Text(
-                                subject,
-                                size=14,
-                                weight=subject_weight,
-                                max_lines=1,
-                                overflow=ft.TextOverflow.ELLIPSIS,
-                            ),
-                            ft.Text(
-                                sender,
-                                size=12,
-                                color=ft.Colors.ON_SURFACE_VARIANT,
-                                max_lines=1,
-                                overflow=ft.TextOverflow.ELLIPSIS,
-                            ),
-                            ft.Text(
-                                snippet,
-                                size=12,
-                                color=ft.Colors.ON_SURFACE_VARIANT,
-                                max_lines=1,
-                                overflow=ft.TextOverflow.ELLIPSIS,
-                            ),
-                        ],
-                        spacing=2,
-                    ),
-                    ft.Text(
-                        date_str,
-                        size=12,
-                        color=ft.Colors.ON_SURFACE_VARIANT,
-                    ),
-                ],
-            ),
-            padding=12,
-            border_radius=8,
+        return EmailListItem(
+            subject=email["subject"] or "(No subject)",
+            sender=email["sender_name"] or email["sender_email"],
+            snippet=email["snippet"] or "",
+            received_at=email["received_at"],
+            is_read=email["is_read"],
+            is_starred=email["is_starred"],
             on_click=lambda _, eid=email_id: self.app.navigate(f"/email/{eid}"),
+            on_star=lambda _, eid=email_id: self.app.page.run_task(
+                self._toggle_star, eid
+            ),
         )
 
     async def _on_refresh(self, e: ft.ControlEvent) -> None:
@@ -243,7 +353,6 @@ class EmailListPage(ft.View):
         self.app.show_snackbar("Fetching new emails...")
 
         # Wait a bit and reload
-        import asyncio
         await asyncio.sleep(2)
         await self._load_data()
 

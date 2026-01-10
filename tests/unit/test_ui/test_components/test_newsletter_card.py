@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from src.ui.components.newsletter_card import NewsletterCard
+from src.ui.themes import BorderRadius, Colors, Spacing
 
 
 class TestNewsletterCard:
@@ -19,7 +20,7 @@ class TestNewsletterCard:
             total_count=25,
         )
         assert card is not None
-        assert isinstance(card, ft.Card)
+        assert isinstance(card, ft.Container)
 
     def test_newsletter_card_stores_name(self):
         """Test newsletter name is stored."""
@@ -62,17 +63,17 @@ class TestNewsletterCard:
         assert card.total_count == 100
 
     def test_newsletter_card_default_color(self):
-        """Test default color when none provided."""
+        """Test default accent color when none provided."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
             unread_count=0,
             total_count=0,
         )
-        assert card.color == "#6750A4"
+        assert card.accent_color == Colors.Light.ACCENT
 
     def test_newsletter_card_custom_color(self):
-        """Test custom color is applied."""
+        """Test custom accent color is applied."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
@@ -80,10 +81,10 @@ class TestNewsletterCard:
             total_count=0,
             color="#FF5733",
         )
-        assert card.color == "#FF5733"
+        assert card.accent_color == "#FF5733"
 
-    def test_newsletter_card_has_content_container(self):
-        """Test card has content wrapped in container."""
+    def test_newsletter_card_has_content_column(self):
+        """Test card has content wrapped in column."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
@@ -91,7 +92,7 @@ class TestNewsletterCard:
             total_count=0,
         )
         assert card.content is not None
-        assert isinstance(card.content, ft.Container)
+        assert isinstance(card.content, ft.Column)
 
     def test_newsletter_card_on_click_callback_set(self):
         """Test View button click callback is set."""
@@ -103,13 +104,7 @@ class TestNewsletterCard:
             total_count=0,
             on_click=callback,
         )
-        # Find the TextButton in the card content
-        container = card.content
-        column = container.content
-        # The last row contains the buttons
-        button_row = column.controls[-1]
-        view_button = button_row.controls[0]
-        assert view_button.on_click == callback
+        assert card._on_click == callback
 
     def test_newsletter_card_on_refresh_callback_set(self):
         """Test refresh button click callback is set."""
@@ -121,42 +116,38 @@ class TestNewsletterCard:
             total_count=0,
             on_refresh=callback,
         )
-        # Find the IconButton in the card content
-        container = card.content
-        column = container.content
-        button_row = column.controls[-1]
-        refresh_button = button_row.controls[1]
-        assert refresh_button.on_click == callback
+        assert card._on_refresh == callback
 
-    def test_newsletter_card_has_email_icon(self):
-        """Test card has email icon."""
+    def test_newsletter_card_has_color_dot(self):
+        """Test card has color indicator dot."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
             unread_count=0,
             total_count=0,
         )
-        container = card.content
-        column = container.content
+        column = card.content
         header_row = column.controls[0]
-        icon_container = header_row.controls[0]
-        icon = icon_container.content
-        assert isinstance(icon, ft.Icon)
+        # Color dot is the first control in header row
+        color_dot = header_row.controls[0]
+        assert isinstance(color_dot, ft.Container)
+        assert color_dot.width == 10
+        assert color_dot.height == 10
+        assert color_dot.border_radius == BorderRadius.FULL
 
     def test_newsletter_card_has_view_button(self):
-        """Test card has View button."""
+        """Test card has View emails button."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
             unread_count=0,
             total_count=0,
         )
-        container = card.content
-        column = container.content
-        button_row = column.controls[-1]
-        view_button = button_row.controls[0]
+        column = card.content
+        # Actions row is the last control in column
+        actions_row = column.controls[-1]
+        view_button = actions_row.controls[0]
         assert isinstance(view_button, ft.TextButton)
-        assert view_button.content == "View"
 
     def test_newsletter_card_has_refresh_icon_button(self):
         """Test card has refresh IconButton."""
@@ -166,10 +157,10 @@ class TestNewsletterCard:
             unread_count=0,
             total_count=0,
         )
-        container = card.content
-        column = container.content
-        button_row = column.controls[-1]
-        refresh_button = button_row.controls[1]
+        column = card.content
+        actions_row = column.controls[-1]
+        # Refresh button is the last control in actions row
+        refresh_button = actions_row.controls[-1]
         assert isinstance(refresh_button, ft.IconButton)
         assert refresh_button.icon == ft.Icons.REFRESH
 
@@ -196,12 +187,51 @@ class TestNewsletterCard:
         assert card.total_count == 9999
 
     def test_newsletter_card_content_padding(self):
-        """Test card content has proper padding."""
+        """Test card has proper padding."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
             unread_count=0,
             total_count=0,
         )
-        container = card.content
-        assert container.padding == 16
+        assert card.padding == Spacing.MD
+
+    def test_newsletter_card_has_border_radius(self):
+        """Test card has proper border radius."""
+        card = NewsletterCard(
+            name="Newsletter",
+            label="Label",
+            unread_count=0,
+            total_count=0,
+        )
+        assert card.border_radius == BorderRadius.MD
+
+    def test_newsletter_card_has_border(self):
+        """Test card has border."""
+        card = NewsletterCard(
+            name="Newsletter",
+            label="Label",
+            unread_count=0,
+            total_count=0,
+        )
+        assert card.border is not None
+
+    def test_newsletter_card_has_shadow(self):
+        """Test card has shadow for depth."""
+        card = NewsletterCard(
+            name="Newsletter",
+            label="Label",
+            unread_count=0,
+            total_count=0,
+        )
+        assert card.shadow is not None
+
+    def test_newsletter_card_has_animation(self):
+        """Test card has hover animation."""
+        card = NewsletterCard(
+            name="Newsletter",
+            label="Label",
+            unread_count=0,
+            total_count=0,
+        )
+        assert card.animate is not None

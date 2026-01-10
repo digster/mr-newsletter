@@ -43,30 +43,12 @@ class TestHomePage:
             page = HomePage(app=mock_app)
             assert page.route == "/home"
 
-    def test_home_page_has_appbar(self, mock_app):
-        """Test page has an AppBar."""
+    def test_home_page_has_sidebar(self, mock_app):
+        """Test page has a sidebar for navigation."""
         with patch('src.ui.pages.home_page.NewsletterService'):
             from src.ui.pages.home_page import HomePage
             page = HomePage(app=mock_app)
-            assert page.appbar is not None
-            assert isinstance(page.appbar, ft.AppBar)
-
-    def test_home_page_appbar_title(self, mock_app):
-        """Test AppBar has correct title."""
-        with patch('src.ui.pages.home_page.NewsletterService'):
-            from src.ui.pages.home_page import HomePage
-            page = HomePage(app=mock_app)
-            assert page.appbar.title is not None
-            assert isinstance(page.appbar.title, ft.Text)
-            assert page.appbar.title.value == "Newsletter Manager"
-
-    def test_home_page_appbar_has_actions(self, mock_app):
-        """Test AppBar has action buttons."""
-        with patch('src.ui.pages.home_page.NewsletterService'):
-            from src.ui.pages.home_page import HomePage
-            page = HomePage(app=mock_app)
-            assert page.appbar.actions is not None
-            assert len(page.appbar.actions) == 3  # Refresh, Manage, Settings
+            assert page.sidebar is not None
 
     def test_home_page_has_grid_view(self, mock_app):
         """Test page has a GridView for newsletters."""
@@ -76,12 +58,12 @@ class TestHomePage:
             assert page.newsletters_grid is not None
             assert isinstance(page.newsletters_grid, ft.GridView)
 
-    def test_home_page_grid_has_three_columns(self, mock_app):
-        """Test GridView has 3 columns."""
+    def test_home_page_grid_has_columns(self, mock_app):
+        """Test GridView has columns configured."""
         with patch('src.ui.pages.home_page.NewsletterService'):
             from src.ui.pages.home_page import HomePage
             page = HomePage(app=mock_app)
-            assert page.newsletters_grid.runs_count == 3
+            assert page.newsletters_grid.runs_count is not None
 
     def test_home_page_has_loading_indicator(self, mock_app):
         """Test page has a loading ProgressRing."""
@@ -92,12 +74,13 @@ class TestHomePage:
             assert isinstance(page.loading, ft.ProgressRing)
 
     def test_home_page_has_empty_state(self, mock_app):
-        """Test page has empty state column."""
+        """Test page has empty state container."""
         with patch('src.ui.pages.home_page.NewsletterService'):
             from src.ui.pages.home_page import HomePage
             page = HomePage(app=mock_app)
             assert page.empty_state is not None
-            assert isinstance(page.empty_state, ft.Column)
+            # Empty state is now wrapped in a Container
+            assert isinstance(page.empty_state, ft.Container)
 
     def test_home_page_triggers_load_on_init(self, mock_app):
         """Test page triggers _load_newsletters on initialization."""

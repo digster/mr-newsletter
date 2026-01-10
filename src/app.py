@@ -1,6 +1,5 @@
 """Main Flet application class."""
 
-import asyncio
 import logging
 from typing import Optional
 
@@ -13,6 +12,7 @@ from src.services.fetch_queue_service import FetchPriority, FetchQueueService
 from src.services.gmail_service import GmailService
 from src.services.newsletter_service import NewsletterService
 from src.services.scheduler_service import SchedulerService
+from src.ui.themes import AppTheme, BorderRadius, Colors, Spacing, Typography
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +42,19 @@ class NewsletterApp:
     async def initialize(self) -> None:
         """Initialize the application."""
         # Configure page
-        self.page.title = "Newsletter Manager"
+        self.page.title = "Newsletter Reader"
         self.page.theme_mode = ft.ThemeMode.SYSTEM
         self.page.padding = 0
+        self.page.spacing = 0
+
+        # Apply new theme
+        self.page.theme = AppTheme.get_light_theme()
+        self.page.dark_theme = AppTheme.get_dark_theme()
+
+        # Window settings
         self.page.window.width = 1200
         self.page.window.height = 800
-        self.page.window.min_width = 800
+        self.page.window.min_width = 900
         self.page.window.min_height = 600
 
         # Initialize database
@@ -188,60 +195,73 @@ class NewsletterApp:
         """
         return ft.View(
             route="/config-error",
+            padding=0,
             controls=[
                 ft.Container(
                     content=ft.Column(
                         controls=[
                             ft.Icon(
                                 ft.Icons.ERROR_OUTLINE,
-                                size=64,
-                                color=ft.Colors.ERROR,
+                                size=48,
+                                color=Colors.Light.ERROR,
                             ),
+                            ft.Container(height=Spacing.LG),
                             ft.Text(
                                 "Configuration Required",
-                                size=24,
-                                weight=ft.FontWeight.BOLD,
+                                size=Typography.H2_SIZE,
+                                weight=ft.FontWeight.W_600,
+                                color=Colors.Light.TEXT_PRIMARY,
                             ),
-                            ft.Container(height=16),
+                            ft.Container(height=Spacing.MD),
                             ft.Text(
                                 "Google OAuth credentials are not configured.",
-                                size=16,
+                                size=Typography.BODY_SIZE,
+                                color=Colors.Light.TEXT_SECONDARY,
                             ),
-                            ft.Container(height=8),
+                            ft.Container(height=Spacing.XS),
                             ft.Text(
                                 "Please set the following environment variables:",
-                                size=14,
-                                color=ft.Colors.ON_SURFACE_VARIANT,
+                                size=Typography.BODY_SMALL_SIZE,
+                                color=Colors.Light.TEXT_TERTIARY,
                             ),
-                            ft.Container(height=16),
+                            ft.Container(height=Spacing.MD),
                             ft.Container(
                                 content=ft.Column(
                                     controls=[
                                         ft.Text(
                                             "GOOGLE_CLIENT_ID",
                                             font_family="monospace",
-                                            weight=ft.FontWeight.BOLD,
+                                            size=Typography.BODY_SIZE,
+                                            weight=ft.FontWeight.W_500,
+                                            color=Colors.Light.TEXT_PRIMARY,
                                         ),
                                         ft.Text(
                                             "GOOGLE_CLIENT_SECRET",
                                             font_family="monospace",
-                                            weight=ft.FontWeight.BOLD,
+                                            size=Typography.BODY_SIZE,
+                                            weight=ft.FontWeight.W_500,
+                                            color=Colors.Light.TEXT_PRIMARY,
                                         ),
                                     ],
-                                    spacing=4,
+                                    spacing=Spacing.XXS,
                                 ),
-                                padding=16,
-                                bgcolor=ft.Colors.SURFACE_VARIANT,
-                                border_radius=8,
+                                padding=Spacing.MD,
+                                bgcolor=Colors.Light.BG_TERTIARY,
+                                border_radius=BorderRadius.MD,
                             ),
-                            ft.Container(height=16),
+                            ft.Container(height=Spacing.MD),
                             ft.Text(
                                 "Get these from Google Cloud Console:",
-                                size=14,
-                                color=ft.Colors.ON_SURFACE_VARIANT,
+                                size=Typography.BODY_SMALL_SIZE,
+                                color=Colors.Light.TEXT_TERTIARY,
                             ),
+                            ft.Container(height=Spacing.XS),
                             ft.TextButton(
-                                "console.cloud.google.com/apis/credentials",
+                                content=ft.Text(
+                                    "console.cloud.google.com/apis/credentials",
+                                    size=Typography.BODY_SMALL_SIZE,
+                                    color=Colors.Light.ACCENT,
+                                ),
                                 url="https://console.cloud.google.com/apis/credentials",
                             ),
                         ],
@@ -250,7 +270,8 @@ class NewsletterApp:
                     ),
                     expand=True,
                     alignment=ft.alignment.center,
-                    padding=32,
+                    padding=Spacing.XL,
+                    bgcolor=Colors.Light.BG_PRIMARY,
                 )
             ],
         )
@@ -290,8 +311,12 @@ class NewsletterApp:
             error: Whether this is an error message.
         """
         self.page.snack_bar = ft.SnackBar(
-            content=ft.Text(message),
-            bgcolor=ft.Colors.ERROR if error else None,
+            content=ft.Text(
+                message,
+                size=Typography.BODY_SMALL_SIZE,
+                color="#FFFFFF" if error else Colors.Light.TEXT_PRIMARY,
+            ),
+            bgcolor=Colors.Light.ERROR if error else Colors.Light.BG_TERTIARY,
         )
         self.page.snack_bar.open = True
         self.page.update()

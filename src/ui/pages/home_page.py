@@ -1,4 +1,4 @@
-"""Home page - main dashboard."""
+"""Home page - main dashboard with sidebar navigation."""
 
 from typing import TYPE_CHECKING
 
@@ -6,77 +6,88 @@ import flet as ft
 
 from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
+from src.ui.components import NewsletterCard, Sidebar
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
 
 
 class HomePage(ft.View):
-    """Main dashboard showing newsletter overview."""
+    """Main dashboard showing newsletter overview with sidebar."""
 
     def __init__(self, app: "NewsletterApp"):
-        super().__init__(route="/home")
+        super().__init__(route="/home", padding=0, spacing=0)
         self.app = app
+        self.newsletters = []
 
         self.newsletters_grid = ft.GridView(
             expand=True,
             runs_count=3,
             max_extent=350,
-            spacing=16,
-            run_spacing=16,
+            spacing=Spacing.MD,
+            run_spacing=Spacing.MD,
+            padding=0,
         )
 
-        self.loading = ft.ProgressRing(visible=False)
-        self.empty_state = ft.Column(
-            [
-                ft.Icon(
-                    ft.Icons.INBOX_OUTLINED,
-                    size=64,
-                    color=ft.Colors.ON_SURFACE_VARIANT,
-                ),
-                ft.Container(height=16),
-                ft.Text(
-                    "No newsletters yet",
-                    size=20,
-                    color=ft.Colors.ON_SURFACE_VARIANT,
-                ),
-                ft.Text(
-                    "Add a newsletter to get started",
-                    color=ft.Colors.ON_SURFACE_VARIANT,
-                ),
-                ft.Container(height=16),
-                ft.Button(
-                    "Add Newsletter",
-                    icon=ft.Icons.ADD,
-                    on_click=lambda _: self.app.navigate("/newsletters"),
-                ),
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        self.loading = ft.ProgressRing(
+            visible=False,
+            width=20,
+            height=20,
+            stroke_width=2,
+            color=Colors.Light.ACCENT,
+        )
+
+        self.empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(
+                        ft.Icons.INBOX_OUTLINED,
+                        size=48,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.MD),
+                    ft.Text(
+                        "No newsletters yet",
+                        size=Typography.H4_SIZE,
+                        weight=ft.FontWeight.W_500,
+                        color=Colors.Light.TEXT_SECONDARY,
+                    ),
+                    ft.Container(height=Spacing.XS),
+                    ft.Text(
+                        "Add a newsletter to get started",
+                        size=Typography.BODY_SIZE,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.LG),
+                    ft.ElevatedButton(
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.Icons.ADD, size=18, color="#FFFFFF"),
+                                ft.Container(width=Spacing.XS),
+                                ft.Text("Add Newsletter"),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        ),
+                        bgcolor=Colors.Light.ACCENT,
+                        color="#FFFFFF",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                        ),
+                        on_click=lambda _: self.app.navigate("/newsletters"),
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            expand=True,
+            alignment=ft.alignment.Alignment.CENTER,
             visible=False,
         )
 
-        self.appbar = ft.AppBar(
-            title=ft.Text("Newsletter Manager"),
-            center_title=False,
-            actions=[
-                ft.IconButton(
-                    icon=ft.Icons.REFRESH,
-                    tooltip="Refresh all",
-                    on_click=lambda e: self.app.page.run_task(
-                        self._on_refresh_all, e
-                    ),
-                ),
-                ft.IconButton(
-                    icon=ft.Icons.FOLDER_OUTLINED,
-                    tooltip="Manage newsletters",
-                    on_click=lambda _: self.app.navigate("/newsletters"),
-                ),
-                ft.IconButton(
-                    icon=ft.Icons.SETTINGS,
-                    tooltip="Settings",
-                    on_click=lambda _: self.app.navigate("/settings"),
-                ),
-            ],
+        self.sidebar = Sidebar(
+            current_route="/home",
+            newsletters=[],
+            on_navigate=self._handle_navigate,
         )
 
         self.controls = [self._build_content()]
@@ -85,36 +96,72 @@ class HomePage(ft.View):
         self.app.page.run_task(self._load_newsletters)
 
     def _build_content(self) -> ft.Control:
-        """Build page content."""
-        return ft.Container(
-            content=ft.Stack(
-                [
-                    ft.Column(
+        """Build page content with sidebar."""
+        return ft.Row(
+            [
+                # Sidebar
+                self.sidebar,
+                # Main content
+                ft.Container(
+                    content=ft.Column(
                         [
+                            # Page header
                             ft.Container(
                                 content=ft.Row(
                                     [
                                         ft.Text(
-                                            "Your Newsletters",
-                                            size=24,
-                                            weight=ft.FontWeight.BOLD,
+                                            "Home",
+                                            size=Typography.H1_SIZE,
+                                            weight=ft.FontWeight.W_600,
+                                            color=Colors.Light.TEXT_PRIMARY,
                                         ),
+                                        ft.Container(expand=True),
                                         self.loading,
+                                        ft.Container(width=Spacing.SM),
+                                        ft.IconButton(
+                                            icon=ft.Icons.REFRESH,
+                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_size=20,
+                                            tooltip="Refresh all",
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                            ),
+                                            on_click=lambda e: self.app.page.run_task(
+                                                self._on_refresh_all, e
+                                            ),
+                                        ),
                                     ],
                                 ),
-                                padding=ft.Padding(bottom=16),
+                                padding=ft.padding.only(bottom=Spacing.LG),
                             ),
-                            self.newsletters_grid,
-                            self.empty_state,
+                            # Content area
+                            ft.Container(
+                                content=ft.Stack(
+                                    [
+                                        self.newsletters_grid,
+                                        self.empty_state,
+                                    ],
+                                    expand=True,
+                                ),
+                                expand=True,
+                            ),
                         ],
                         expand=True,
                     ),
-                ],
-                expand=True,
-            ),
-            padding=24,
+                    padding=Spacing.LG,
+                    expand=True,
+                    bgcolor=Colors.Light.BG_SECONDARY,
+                ),
+            ],
             expand=True,
+            spacing=0,
         )
+
+    def _handle_navigate(self, route: str) -> None:
+        """Handle navigation from sidebar."""
+        self.app.navigate(route)
 
     async def _load_newsletters(self) -> None:
         """Load newsletters from database."""
@@ -127,15 +174,17 @@ class HomePage(ft.View):
                     session=session,
                     gmail_service=self.app.gmail_service,
                 )
-                newsletters = await service.get_all_newsletters()
+                self.newsletters = await service.get_all_newsletters()
 
             self.newsletters_grid.controls.clear()
 
-            if newsletters:
+            if self.newsletters:
                 self.empty_state.visible = False
-                for newsletter in newsletters:
+                for newsletter in self.newsletters:
                     card = self._create_newsletter_card(newsletter)
                     self.newsletters_grid.controls.append(card)
+                # Update sidebar with newsletters
+                self.sidebar.update_newsletters(self.newsletters)
             else:
                 self.empty_state.visible = True
 
@@ -147,107 +196,17 @@ class HomePage(ft.View):
 
     def _create_newsletter_card(self, newsletter) -> ft.Control:
         """Create a card for a newsletter."""
-        color = newsletter.color or "#6750A4"
-
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Column(
-                    [
-                        ft.Row(
-                            [
-                                ft.Container(
-                                    content=ft.Icon(
-                                        ft.Icons.EMAIL,
-                                        color=ft.Colors.WHITE,
-                                    ),
-                                    bgcolor=color,
-                                    border_radius=8,
-                                    padding=8,
-                                ),
-                                ft.Container(width=12),
-                                ft.Column(
-                                    [
-                                        ft.Text(
-                                            newsletter.name,
-                                            size=16,
-                                            weight=ft.FontWeight.BOLD,
-                                            max_lines=1,
-                                            overflow=ft.TextOverflow.ELLIPSIS,
-                                        ),
-                                        ft.Text(
-                                            newsletter.gmail_label_name,
-                                            size=12,
-                                            color=ft.Colors.ON_SURFACE_VARIANT,
-                                            max_lines=1,
-                                            overflow=ft.TextOverflow.ELLIPSIS,
-                                        ),
-                                    ],
-                                    spacing=2,
-                                    expand=True,
-                                ),
-                            ],
-                        ),
-                        ft.Container(height=16),
-                        ft.Row(
-                            [
-                                ft.Column(
-                                    [
-                                        ft.Text(
-                                            str(newsletter.unread_count),
-                                            size=24,
-                                            weight=ft.FontWeight.BOLD,
-                                            color=color
-                                            if newsletter.unread_count > 0
-                                            else None,
-                                        ),
-                                        ft.Text(
-                                            "Unread",
-                                            size=12,
-                                            color=ft.Colors.ON_SURFACE_VARIANT,
-                                        ),
-                                    ],
-                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                ),
-                                ft.Container(width=24),
-                                ft.Column(
-                                    [
-                                        ft.Text(
-                                            str(newsletter.total_count),
-                                            size=24,
-                                            weight=ft.FontWeight.BOLD,
-                                        ),
-                                        ft.Text(
-                                            "Total",
-                                            size=12,
-                                            color=ft.Colors.ON_SURFACE_VARIANT,
-                                        ),
-                                    ],
-                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                ),
-                            ],
-                        ),
-                        ft.Container(height=16),
-                        ft.Row(
-                            [
-                                ft.TextButton(
-                                    "View Emails",
-                                    on_click=lambda _, nid=newsletter.id: self.app.navigate(
-                                        f"/newsletter/{nid}"
-                                    ),
-                                ),
-                                ft.IconButton(
-                                    icon=ft.Icons.REFRESH,
-                                    tooltip="Fetch now",
-                                    on_click=lambda _, nid=newsletter.id: self.app.page.run_task(
-                                        self._fetch_newsletter, nid
-                                    ),
-                                ),
-                            ],
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                        ),
-                    ],
-                ),
-                padding=16,
+        return NewsletterCard(
+            name=newsletter.name,
+            label=newsletter.gmail_label_name,
+            unread_count=newsletter.unread_count,
+            total_count=newsletter.total_count,
+            color=newsletter.color,
+            on_click=lambda _, nid=newsletter.id: self.app.navigate(
+                f"/newsletter/{nid}"
+            ),
+            on_refresh=lambda _, nid=newsletter.id: self.app.page.run_task(
+                self._fetch_newsletter, nid
             ),
         )
 

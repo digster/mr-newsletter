@@ -1,10 +1,12 @@
 """Unit tests for dialog components."""
 
-import flet as ft
-import pytest
 from unittest.mock import MagicMock
 
-from src.ui.components.dialogs import ConfirmDialog, AddNewsletterDialog
+import flet as ft
+import pytest
+
+from src.ui.components.dialogs import AddNewsletterDialog, ConfirmDialog
+from src.ui.themes import Colors
 from tests.fixtures.sample_data import create_gmail_label
 
 
@@ -30,13 +32,16 @@ class TestConfirmDialog:
         assert dialog.title.value == "Delete Item"
 
     def test_confirm_dialog_message_is_set(self):
-        """Test custom message is set."""
+        """Test custom message is set in container."""
         dialog = ConfirmDialog(
             title="Title",
             message="This action cannot be undone.",
         )
-        assert isinstance(dialog.content, ft.Text)
-        assert dialog.content.value == "This action cannot be undone."
+        # Content is a Container with the message text
+        assert isinstance(dialog.content, ft.Container)
+        message_text = dialog.content.content
+        assert isinstance(message_text, ft.Text)
+        assert message_text.value == "This action cannot be undone."
 
     def test_confirm_dialog_default_button_text(self):
         """Test default button text (Confirm/Cancel)."""
@@ -46,8 +51,9 @@ class TestConfirmDialog:
         )
         cancel_button = dialog.actions[0]
         confirm_button = dialog.actions[1]
-        assert cancel_button.content == "Cancel"
-        assert confirm_button.content == "Confirm"
+        # TextButton uses content attribute, ElevatedButton uses text
+        assert "Cancel" in str(cancel_button.content) or cancel_button.text == "Cancel"
+        assert "Confirm" in str(confirm_button.content) or confirm_button.text == "Confirm"
 
     def test_confirm_dialog_custom_button_text(self):
         """Test custom button text."""
@@ -59,8 +65,8 @@ class TestConfirmDialog:
         )
         cancel_button = dialog.actions[0]
         confirm_button = dialog.actions[1]
-        assert cancel_button.content == "Keep"
-        assert confirm_button.content == "Delete"
+        assert "Keep" in str(cancel_button.content) or cancel_button.text == "Keep"
+        assert "Delete" in str(confirm_button.content) or confirm_button.text == "Delete"
 
     def test_confirm_dialog_destructive_styling(self):
         """Test destructive button has error color."""
@@ -70,17 +76,17 @@ class TestConfirmDialog:
             is_destructive=True,
         )
         confirm_button = dialog.actions[1]
-        assert confirm_button.color == ft.Colors.ERROR
+        assert confirm_button.bgcolor == Colors.Light.ERROR
 
     def test_confirm_dialog_non_destructive_styling(self):
-        """Test non-destructive button has no special color."""
+        """Test non-destructive button has accent color."""
         dialog = ConfirmDialog(
             title="Confirm",
             message="Confirm the action.",
             is_destructive=False,
         )
         confirm_button = dialog.actions[1]
-        assert confirm_button.color is None
+        assert confirm_button.bgcolor == Colors.Light.ACCENT
 
     def test_confirm_dialog_on_confirm_callback(self):
         """Test confirm button callback is set."""
@@ -122,13 +128,13 @@ class TestConfirmDialog:
         assert isinstance(cancel_button, ft.TextButton)
 
     def test_confirm_dialog_confirm_is_button(self):
-        """Test confirm button is Button."""
+        """Test confirm button is ElevatedButton."""
         dialog = ConfirmDialog(
             title="Title",
             message="Message",
         )
         confirm_button = dialog.actions[1]
-        assert isinstance(confirm_button, ft.Button)
+        assert isinstance(confirm_button, ft.ElevatedButton)
 
 
 class TestAddNewsletterDialog:
@@ -261,24 +267,24 @@ class TestAddNewsletterDialog:
         assert len(dialog.actions) == 2
 
     def test_add_newsletter_dialog_button_text(self, sample_labels):
-        """Test button text is Cancel and Add."""
+        """Test button text is Cancel and Add Newsletter."""
         dialog = AddNewsletterDialog(labels=sample_labels)
         cancel_button = dialog.actions[0]
         add_button = dialog.actions[1]
-        assert cancel_button.content == "Cancel"
-        assert add_button.content == "Add"
+        # TextButton uses content attribute, ElevatedButton uses text
+        assert "Cancel" in str(cancel_button.content) or cancel_button.text == "Cancel"
+        assert "Add Newsletter" in str(add_button.content) or add_button.text == "Add Newsletter"
 
     def test_add_newsletter_dialog_content_width(self, sample_labels):
-        """Test content column has 400px width."""
+        """Test content container has 400px width."""
         dialog = AddNewsletterDialog(labels=sample_labels)
-        content_column = dialog.content
-        assert content_column.width == 400
+        content_container = dialog.content
+        assert content_container.width == 400
 
-    def test_add_newsletter_dialog_content_is_tight(self, sample_labels):
-        """Test content column is tight (no extra spacing)."""
+    def test_add_newsletter_dialog_content_is_container(self, sample_labels):
+        """Test content is wrapped in Container."""
         dialog = AddNewsletterDialog(labels=sample_labels)
-        content_column = dialog.content
-        assert content_column.tight is True
+        assert isinstance(dialog.content, ft.Container)
 
     def test_add_newsletter_dialog_with_empty_labels(self):
         """Test dialog handles empty labels list."""

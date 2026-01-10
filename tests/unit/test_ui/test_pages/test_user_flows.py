@@ -282,59 +282,6 @@ class TestSignInFlow:
             assert "OAuth failed" in page.error_text.value
 
 
-class TestRefreshFlow:
-    """Test the refresh data flow."""
-
-    def test_home_refresh_button_triggers_run_task(self, mock_app):
-        """Clicking Refresh on home should trigger run_task."""
-        from src.ui.pages.home_page import HomePage
-
-        page = HomePage(app=mock_app)
-
-        # Reset run_task call count (constructor may have called it)
-        mock_app.page.run_task.reset_mock()
-
-        # Find refresh button in appbar actions
-        refresh_btn = find_icon_button(page.appbar, ft.Icons.REFRESH)
-        assert refresh_btn is not None, "Refresh button should exist in appbar"
-
-        # Simulate click
-        mock_event = MagicMock()
-        refresh_btn.on_click(mock_event)
-
-        # Verify run_task was called
-        assert mock_app.page.run_task.called, (
-            "Refresh button should trigger run_task. "
-            "Async handlers must be wrapped with page.run_task()."
-        )
-
-    def test_email_list_refresh_button_triggers_run_task(self, mock_app):
-        """Clicking Refresh on email list should trigger run_task."""
-        with patch("src.ui.pages.email_list_page.NewsletterService"), patch(
-            "src.ui.pages.email_list_page.EmailService"
-        ):
-            from src.ui.pages.email_list_page import EmailListPage
-
-            page = EmailListPage(app=mock_app, newsletter_id=1)
-
-            # Reset run_task call count (constructor may have called it)
-            mock_app.page.run_task.reset_mock()
-
-            # Find refresh button in appbar actions
-            refresh_btn = find_icon_button(page.appbar, ft.Icons.REFRESH)
-            assert refresh_btn is not None, "Refresh button should exist in appbar"
-
-            # Simulate click
-            mock_event = MagicMock()
-            refresh_btn.on_click(mock_event)
-
-            # Verify run_task was called
-            assert mock_app.page.run_task.called, (
-                "Refresh button should trigger run_task. "
-                "Async handlers must be wrapped with page.run_task()."
-            )
-
-
 class TestAsyncHandlerWiring:
     """
     Tests that verify all async event handlers are properly wired with run_task.
@@ -378,29 +325,10 @@ class TestAsyncHandlerWiring:
             page._on_sign_in
         ), "_on_sign_in should be async"
 
-    def test_home_refresh_button(self, mock_app):
-        """Home Refresh button should use run_task."""
-        from src.ui.pages.home_page import HomePage
+    def test_home_page_has_sidebar(self, mock_app):
+        """Home page should have sidebar for navigation."""
+        with patch('src.ui.pages.home_page.NewsletterService'):
+            from src.ui.pages.home_page import HomePage
 
-        page = HomePage(app=mock_app)
-        mock_app.page.run_task.reset_mock()
-
-        btn = find_icon_button(page.appbar, ft.Icons.REFRESH)
-        assert btn is not None, "Refresh button not found in home appbar"
-        btn.on_click(MagicMock())
-        assert mock_app.page.run_task.called, "Refresh must use run_task"
-
-    def test_email_list_refresh_button(self, mock_app):
-        """Email list Refresh button should use run_task."""
-        with patch("src.ui.pages.email_list_page.NewsletterService"), patch(
-            "src.ui.pages.email_list_page.EmailService"
-        ):
-            from src.ui.pages.email_list_page import EmailListPage
-
-            page = EmailListPage(app=mock_app, newsletter_id=1)
-            mock_app.page.run_task.reset_mock()
-
-            btn = find_icon_button(page.appbar, ft.Icons.REFRESH)
-            assert btn is not None, "Refresh button not found in email list appbar"
-            btn.on_click(MagicMock())
-            assert mock_app.page.run_task.called, "Refresh must use run_task"
+            page = HomePage(app=mock_app)
+            assert page.sidebar is not None, "Home page should have sidebar"

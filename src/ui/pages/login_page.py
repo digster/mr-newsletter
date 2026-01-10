@@ -1,4 +1,4 @@
-"""Login page for Gmail OAuth."""
+"""Login page for Gmail OAuth with sophisticated styling."""
 
 from typing import TYPE_CHECKING
 
@@ -6,13 +6,14 @@ import flet as ft
 
 from src.services.auth_service import AuthService
 from src.services.gmail_service import GmailService
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
 
 
 class LoginPage(ft.View):
-    """Login page with Gmail OAuth."""
+    """Login page with Gmail OAuth and clean design."""
 
     def __init__(self, app: "NewsletterApp"):
         super().__init__(route="/login")
@@ -20,12 +21,21 @@ class LoginPage(ft.View):
 
         self.error_text = ft.Text(
             "",
-            color=ft.Colors.ERROR,
+            size=Typography.BODY_SMALL_SIZE,
+            color=Colors.Light.ERROR,
             visible=False,
         )
-        self.loading = ft.ProgressRing(visible=False)
+        self.loading = ft.ProgressRing(
+            visible=False,
+            width=20,
+            height=20,
+            stroke_width=2,
+            color=Colors.Light.ACCENT,
+        )
         self.status_text = ft.Text(
             "",
+            size=Typography.BODY_SMALL_SIZE,
+            color=Colors.Light.TEXT_SECONDARY,
             visible=False,
         )
 
@@ -36,49 +46,98 @@ class LoginPage(ft.View):
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Container(height=100),
-                    ft.Icon(
-                        ft.Icons.EMAIL_OUTLINED,
-                        size=80,
-                        color=ft.Colors.PRIMARY,
-                    ),
-                    ft.Container(height=20),
-                    ft.Text(
-                        "Newsletter Manager",
-                        size=32,
-                        weight=ft.FontWeight.BOLD,
-                    ),
-                    ft.Container(height=10),
-                    ft.Text(
-                        "Sign in with your Google account to access your newsletters",
-                        size=16,
-                        color=ft.Colors.ON_SURFACE_VARIANT,
-                    ),
-                    ft.Container(height=40),
-                    self.error_text,
-                    self.status_text,
-                    ft.Container(height=20),
+                    ft.Container(expand=True),
+                    # Brand/Logo
                     ft.Row(
                         [
-                            self.loading,
-                            ft.Button(
-                                "Sign in with Google",
-                                icon=ft.Icons.LOGIN,
-                                on_click=lambda e: self.app.page.run_task(
-                                    self._on_sign_in, e
-                                ),
-                                style=ft.ButtonStyle(
-                                    padding=20,
-                                ),
+                            ft.Icon(
+                                ft.Icons.MARK_EMAIL_READ,
+                                size=32,
+                                color=Colors.Light.ACCENT,
+                            ),
+                            ft.Container(width=Spacing.SM),
+                            ft.Text(
+                                "Newsletter",
+                                size=Typography.H2_SIZE,
+                                weight=ft.FontWeight.W_600,
+                                color=Colors.Light.TEXT_PRIMARY,
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
                     ),
+                    ft.Container(height=Spacing.XL),
+                    # Description
+                    ft.Text(
+                        "Sign in to access your newsletters",
+                        size=Typography.BODY_SIZE,
+                        color=Colors.Light.TEXT_SECONDARY,
+                        text_align=ft.TextAlign.CENTER,
+                    ),
+                    ft.Container(height=Spacing.XL),
+                    # Error/status area
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                self.error_text,
+                                self.status_text,
+                            ],
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=Spacing.XS,
+                        ),
+                        height=40,
+                    ),
+                    ft.Container(height=Spacing.MD),
+                    # Sign in button
+                    ft.Container(
+                        content=ft.ElevatedButton(
+                            content=ft.Row(
+                                [
+                                    self.loading,
+                                    ft.Container(width=Spacing.XS)
+                                    if not self.loading.visible
+                                    else ft.Container(),
+                                    ft.Icon(
+                                        ft.Icons.LOGIN,
+                                        size=18,
+                                        color="#FFFFFF",
+                                    ),
+                                    ft.Container(width=Spacing.XS),
+                                    ft.Text(
+                                        "Sign in with Google",
+                                        size=Typography.BODY_SIZE,
+                                        weight=ft.FontWeight.W_500,
+                                    ),
+                                ],
+                                alignment=ft.MainAxisAlignment.CENTER,
+                                spacing=0,
+                            ),
+                            bgcolor=Colors.Light.ACCENT,
+                            color="#FFFFFF",
+                            height=48,
+                            width=240,
+                            style=ft.ButtonStyle(
+                                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                                elevation=0,
+                            ),
+                            on_click=lambda e: self.app.page.run_task(
+                                self._on_sign_in, e
+                            ),
+                        ),
+                    ),
+                    ft.Container(expand=True),
+                    # Footer
+                    ft.Text(
+                        "Your data stays private and secure",
+                        size=Typography.CAPTION_SIZE,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.XL),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=40,
             expand=True,
+            bgcolor=Colors.Light.BG_PRIMARY,
+            padding=Spacing.XL,
         )
 
     async def _on_sign_in(self, e: ft.ControlEvent) -> None:

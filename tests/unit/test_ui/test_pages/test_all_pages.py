@@ -82,12 +82,12 @@ class TestNewslettersPage:
             page = NewslettersPage(app=mock_app)
             assert page.route == "/newsletters"
 
-    def test_newsletters_page_has_appbar(self, mock_app):
-        """Test page has an AppBar."""
+    def test_newsletters_page_has_sidebar(self, mock_app):
+        """Test page has a sidebar for navigation."""
         with patch('src.ui.pages.newsletters_page.NewsletterService'):
             from src.ui.pages.newsletters_page import NewslettersPage
             page = NewslettersPage(app=mock_app)
-            assert page.appbar is not None
+            assert page.sidebar is not None
 
     def test_newsletters_page_has_list_view(self, mock_app):
         """Test page has a ListView for newsletters."""
@@ -135,6 +135,14 @@ class TestEmailListPage:
             assert page.emails_list is not None
             assert isinstance(page.emails_list, ft.ListView)
 
+    def test_email_list_page_has_sidebar(self, mock_app):
+        """Test page has a sidebar for navigation."""
+        with patch('src.ui.pages.email_list_page.NewsletterService'), \
+             patch('src.ui.pages.email_list_page.EmailService'):
+            from src.ui.pages.email_list_page import EmailListPage
+            page = EmailListPage(app=mock_app, newsletter_id=1)
+            assert page.sidebar is not None
+
 
 class TestEmailReaderPage:
     """Tests for EmailReaderPage view."""
@@ -161,12 +169,12 @@ class TestEmailReaderPage:
             page = EmailReaderPage(app=mock_app, email_id=99)
             assert page.email_id == 99
 
-    def test_email_reader_page_has_appbar(self, mock_app):
-        """Test page has an AppBar."""
+    def test_email_reader_page_has_sidebar(self, mock_app):
+        """Test page has a sidebar for navigation."""
         with patch('src.ui.pages.email_reader_page.EmailService'):
             from src.ui.pages.email_reader_page import EmailReaderPage
             page = EmailReaderPage(app=mock_app, email_id=1)
-            assert page.appbar is not None
+            assert page.sidebar is not None
 
 
 class TestSettingsPage:
@@ -185,11 +193,11 @@ class TestSettingsPage:
         page = SettingsPage(app=mock_app)
         assert page.route == "/settings"
 
-    def test_settings_page_has_appbar(self, mock_app):
-        """Test page has an AppBar."""
+    def test_settings_page_has_sidebar(self, mock_app):
+        """Test page has a sidebar for navigation."""
         from src.ui.pages.settings_page import SettingsPage
         page = SettingsPage(app=mock_app)
-        assert page.appbar is not None
+        assert page.sidebar is not None
 
     def test_settings_page_has_theme_dropdown(self, mock_app):
         """Test page has theme dropdown."""

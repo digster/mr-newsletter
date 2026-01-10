@@ -1,43 +1,208 @@
-"""Newsletters management page."""
+"""Newsletters management page with sophisticated styling."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import flet as ft
 
 from src.services.fetch_queue_service import FetchPriority
-from src.services.gmail_service import GmailLabel
 from src.services.newsletter_service import NewsletterService
+from src.ui.components import AddNewsletterDialog, ConfirmDialog, EditNewsletterDialog, Sidebar
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
 
 
+class NewsletterListItem(ft.Container):
+    """List item for newsletter management."""
+
+    def __init__(
+        self,
+        newsletter,
+        on_edit=None,
+        on_delete=None,
+    ):
+        self.newsletter = newsletter
+        self._on_edit = on_edit
+        self._on_delete = on_delete
+
+        # Format auto-fetch text
+        if newsletter.auto_fetch_enabled:
+            interval = newsletter.fetch_interval_minutes
+            if interval >= 1440:
+                days = interval // 1440
+                auto_fetch_text = f"Every {days} day{'s' if days > 1 else ''}"
+            elif interval >= 60:
+                hours = interval // 60
+                auto_fetch_text = f"Every {hours} hour{'s' if hours > 1 else ''}"
+            else:
+                auto_fetch_text = f"Every {interval} minutes"
+        else:
+            auto_fetch_text = "Manual only"
+
+        super().__init__(
+            content=ft.Row(
+                [
+                    # Color dot
+                    ft.Container(
+                        width=10,
+                        height=10,
+                        border_radius=BorderRadius.FULL,
+                        bgcolor=newsletter.color or Colors.Light.ACCENT,
+                    ),
+                    ft.Container(width=Spacing.SM),
+                    # Info
+                    ft.Column(
+                        [
+                            ft.Text(
+                                newsletter.name,
+                                size=Typography.BODY_SIZE,
+                                weight=ft.FontWeight.W_500,
+                                color=Colors.Light.TEXT_PRIMARY,
+                            ),
+                            ft.Row(
+                                [
+                                    ft.Icon(
+                                        ft.Icons.LABEL_OUTLINED,
+                                        size=12,
+                                        color=Colors.Light.TEXT_TERTIARY,
+                                    ),
+                                    ft.Container(width=Spacing.XXS),
+                                    ft.Text(
+                                        newsletter.gmail_label_name,
+                                        size=Typography.CAPTION_SIZE,
+                                        color=Colors.Light.TEXT_TERTIARY,
+                                    ),
+                                    ft.Container(width=Spacing.SM),
+                                    ft.Icon(
+                                        ft.Icons.SCHEDULE,
+                                        size=12,
+                                        color=Colors.Light.TEXT_TERTIARY,
+                                    ),
+                                    ft.Container(width=Spacing.XXS),
+                                    ft.Text(
+                                        auto_fetch_text,
+                                        size=Typography.CAPTION_SIZE,
+                                        color=Colors.Light.TEXT_TERTIARY,
+                                    ),
+                                ],
+                                spacing=0,
+                            ),
+                        ],
+                        spacing=Spacing.XXS,
+                        expand=True,
+                    ),
+                    # Actions
+                    ft.IconButton(
+                        icon=ft.Icons.EDIT_OUTLINED,
+                        icon_color=Colors.Light.TEXT_TERTIARY,
+                        icon_size=18,
+                        tooltip="Edit",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                        ),
+                        on_click=lambda _: self._on_edit(newsletter) if self._on_edit else None,
+                    ),
+                    ft.IconButton(
+                        icon=ft.Icons.DELETE_OUTLINED,
+                        icon_color=Colors.Light.ERROR,
+                        icon_size=18,
+                        tooltip="Delete",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                        ),
+                        on_click=lambda _: self._on_delete(newsletter) if self._on_delete else None,
+                    ),
+                ],
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=Spacing.MD,
+            border_radius=BorderRadius.MD,
+            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+            bgcolor=Colors.Light.BG_PRIMARY,
+            on_hover=self._on_hover,
+        )
+
+    def _on_hover(self, e: ft.HoverEvent) -> None:
+        self.border = ft.border.all(
+            1,
+            Colors.Light.BORDER_STRONG if e.data == "true" else Colors.Light.BORDER_DEFAULT,
+        )
+        self.update()
+
+
 class NewslettersPage(ft.View):
-    """Page for managing newsletters."""
+    """Page for managing newsletters with sidebar."""
 
     def __init__(self, app: "NewsletterApp"):
-        super().__init__(route="/newsletters")
+        super().__init__(route="/newsletters", padding=0, spacing=0)
         self.app = app
+        self.newsletters = []
 
         self.newsletters_list = ft.ListView(
             expand=True,
-            spacing=8,
+            spacing=Spacing.SM,
+            padding=0,
         )
-        self.loading = ft.ProgressRing(visible=False)
 
-        self.appbar = ft.AppBar(
-            leading=ft.IconButton(
-                icon=ft.Icons.ARROW_BACK,
-                on_click=lambda _: self.app.navigate("/home"),
+        self.loading = ft.ProgressRing(
+            visible=False,
+            width=20,
+            height=20,
+            stroke_width=2,
+            color=Colors.Light.ACCENT,
+        )
+
+        self.empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(
+                        ft.Icons.FOLDER_OUTLINED,
+                        size=48,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.MD),
+                    ft.Text(
+                        "No newsletters yet",
+                        size=Typography.H4_SIZE,
+                        weight=ft.FontWeight.W_500,
+                        color=Colors.Light.TEXT_SECONDARY,
+                    ),
+                    ft.Container(height=Spacing.XS),
+                    ft.Text(
+                        "Add a newsletter to get started",
+                        size=Typography.BODY_SIZE,
+                        color=Colors.Light.TEXT_TERTIARY,
+                    ),
+                    ft.Container(height=Spacing.LG),
+                    ft.ElevatedButton(
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.Icons.ADD, size=18, color="#FFFFFF"),
+                                ft.Container(width=Spacing.XS),
+                                ft.Text("Add Newsletter"),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        ),
+                        bgcolor=Colors.Light.ACCENT,
+                        color="#FFFFFF",
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+                        ),
+                        on_click=lambda e: self.app.page.run_task(self._show_add_dialog, e),
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            title=ft.Text("Manage Newsletters"),
-            actions=[
-                ft.IconButton(
-                    icon=ft.Icons.ADD,
-                    tooltip="Add newsletter",
-                    on_click=lambda e: self.app.page.run_task(self._show_add_dialog, e),
-                ),
-            ],
+            expand=True,
+            alignment=ft.alignment.Alignment.CENTER,
+            visible=False,
+        )
+
+        self.sidebar = Sidebar(
+            current_route="/newsletters",
+            newsletters=[],
+            on_navigate=self._handle_navigate,
         )
 
         self.controls = [self._build_content()]
@@ -46,28 +211,92 @@ class NewslettersPage(ft.View):
         self.app.page.run_task(self._load_newsletters)
 
     def _build_content(self) -> ft.Control:
-        """Build page content."""
-        return ft.Container(
-            content=ft.Column(
-                [
-                    ft.Row(
+        """Build page content with sidebar."""
+        return ft.Row(
+            [
+                # Sidebar
+                self.sidebar,
+                # Main content
+                ft.Container(
+                    content=ft.Column(
                         [
-                            ft.Text(
-                                "Your Newsletters",
-                                size=20,
-                                weight=ft.FontWeight.BOLD,
+                            # Header
+                            ft.Container(
+                                content=ft.Row(
+                                    [
+                                        ft.IconButton(
+                                            icon=ft.Icons.ARROW_BACK,
+                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_size=20,
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                            ),
+                                            on_click=lambda _: self.app.navigate("/home"),
+                                        ),
+                                        ft.Container(width=Spacing.XS),
+                                        ft.Text(
+                                            "Manage Newsletters",
+                                            size=Typography.H1_SIZE,
+                                            weight=ft.FontWeight.W_600,
+                                            color=Colors.Light.TEXT_PRIMARY,
+                                        ),
+                                        ft.Container(expand=True),
+                                        self.loading,
+                                        ft.Container(width=Spacing.SM),
+                                        ft.ElevatedButton(
+                                            content=ft.Row(
+                                                [
+                                                    ft.Icon(ft.Icons.ADD, size=16, color="#FFFFFF"),
+                                                    ft.Container(width=Spacing.XXS),
+                                                    ft.Text("Add"),
+                                                ],
+                                            ),
+                                            bgcolor=Colors.Light.ACCENT,
+                                            color="#FFFFFF",
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                                padding=ft.padding.symmetric(
+                                                    horizontal=Spacing.MD, vertical=Spacing.XS
+                                                ),
+                                            ),
+                                            on_click=lambda e: self.app.page.run_task(
+                                                self._show_add_dialog, e
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                                padding=ft.padding.only(bottom=Spacing.LG),
                             ),
-                            self.loading,
+                            # Content
+                            ft.Container(
+                                content=ft.Stack(
+                                    [
+                                        self.newsletters_list,
+                                        self.empty_state,
+                                    ],
+                                    expand=True,
+                                ),
+                                expand=True,
+                            ),
                         ],
+                        expand=True,
                     ),
-                    ft.Container(height=16),
-                    self.newsletters_list,
-                ],
-                expand=True,
-            ),
-            padding=24,
+                    padding=Spacing.LG,
+                    expand=True,
+                    bgcolor=Colors.Light.BG_SECONDARY,
+                ),
+            ],
             expand=True,
+            spacing=0,
         )
+
+    def _handle_navigate(self, route: str) -> None:
+        """Handle navigation from sidebar."""
+        self.app.navigate(route)
 
     async def _load_newsletters(self) -> None:
         """Load newsletters from database."""
@@ -77,24 +306,25 @@ class NewslettersPage(ft.View):
         try:
             async with self.app.get_session() as session:
                 service = NewsletterService(session=session)
-                newsletters = await service.get_all_newsletters()
+                self.newsletters = await service.get_all_newsletters()
 
+            # Update sidebar
+            self.sidebar.update_newsletters(self.newsletters)
+
+            # Update list
             self.newsletters_list.controls.clear()
 
-            for newsletter in newsletters:
-                tile = self._create_newsletter_tile(newsletter)
-                self.newsletters_list.controls.append(tile)
-
-            if not newsletters:
-                self.newsletters_list.controls.append(
-                    ft.Container(
-                        content=ft.Text(
-                            "No newsletters yet. Click + to add one.",
-                            color=ft.Colors.ON_SURFACE_VARIANT,
-                        ),
-                        padding=24,
+            if self.newsletters:
+                self.empty_state.visible = False
+                for newsletter in self.newsletters:
+                    item = NewsletterListItem(
+                        newsletter=newsletter,
+                        on_edit=self._show_edit_dialog,
+                        on_delete=self._confirm_delete,
                     )
-                )
+                    self.newsletters_list.controls.append(item)
+            else:
+                self.empty_state.visible = True
 
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
@@ -102,60 +332,7 @@ class NewslettersPage(ft.View):
             self.loading.visible = False
             self.app.page.update()
 
-    def _create_newsletter_tile(self, newsletter) -> ft.Control:
-        """Create a list tile for a newsletter."""
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Row(
-                    [
-                        ft.Container(
-                            content=ft.Icon(
-                                ft.Icons.EMAIL,
-                                color=ft.Colors.WHITE,
-                            ),
-                            bgcolor=newsletter.color or "#6750A4",
-                            border_radius=8,
-                            padding=12,
-                        ),
-                        ft.Container(width=16),
-                        ft.Column(
-                            [
-                                ft.Text(
-                                    newsletter.name,
-                                    size=16,
-                                    weight=ft.FontWeight.BOLD,
-                                ),
-                                ft.Text(
-                                    f"Label: {newsletter.gmail_label_name}",
-                                    size=12,
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                                ft.Text(
-                                    f"Auto-fetch: {'Every ' + str(newsletter.fetch_interval_minutes) + ' min' if newsletter.auto_fetch_enabled else 'Disabled'}",
-                                    size=12,
-                                    color=ft.Colors.ON_SURFACE_VARIANT,
-                                ),
-                            ],
-                            spacing=2,
-                            expand=True,
-                        ),
-                        ft.IconButton(
-                            icon=ft.Icons.EDIT,
-                            tooltip="Edit",
-                            on_click=lambda _, n=newsletter: self._show_edit_dialog(n),
-                        ),
-                        ft.IconButton(
-                            icon=ft.Icons.DELETE,
-                            tooltip="Delete",
-                            on_click=lambda _, n=newsletter: self._confirm_delete(n),
-                        ),
-                    ],
-                ),
-                padding=16,
-            ),
-        )
-
-    async def _show_add_dialog(self, e: ft.ControlEvent) -> None:
+    async def _show_add_dialog(self, e) -> None:
         """Show dialog to add a newsletter."""
         try:
             # Get labels from Gmail
@@ -168,33 +345,11 @@ class NewslettersPage(ft.View):
             self.app.show_snackbar(f"Error loading labels: {ex}", error=True)
             return
 
-        # Create dialog
-        name_field = ft.TextField(
-            label="Newsletter Name",
-            hint_text="e.g., Tech News",
-            autofocus=True,
-        )
-
-        label_dropdown = ft.Dropdown(
-            label="Gmail Label",
-            hint_text="Select a Gmail label",
-            options=[
-                ft.dropdown.Option(key=label.id, text=label.name) for label in labels
-            ],
-        )
-
-        auto_fetch_switch = ft.Switch(label="Auto-fetch enabled", value=True)
-
-        interval_field = ft.TextField(
-            label="Fetch interval (minutes)",
-            value="1440",
-            keyboard_type=ft.KeyboardType.NUMBER,
-        )
-
-        async def save_newsletter(e: ft.ControlEvent) -> None:
+        async def save_newsletter(e) -> None:
             try:
-                name = (name_field.value or "").strip()
-                label_id = label_dropdown.value
+                values = dialog.get_values()
+                name = (values["name"] or "").strip()
+                label_id = values["label_id"]
 
                 if not name:
                     self.app.show_snackbar("Name is required", error=True)
@@ -204,14 +359,7 @@ class NewslettersPage(ft.View):
                     return
 
                 # Find label name
-                label_name = next(
-                    (l.name for l in labels if l.id == label_id), label_id
-                )
-
-                try:
-                    interval = int(interval_field.value or "1440")
-                except ValueError:
-                    interval = 1440
+                label_name = next((l.name for l in labels if l.id == label_id), label_id)
 
                 async with self.app.get_session() as session:
                     service = NewsletterService(session=session)
@@ -228,11 +376,11 @@ class NewslettersPage(ft.View):
                         name=name,
                         gmail_label_id=label_id,
                         gmail_label_name=label_name,
-                        auto_fetch=auto_fetch_switch.value,
-                        fetch_interval=interval,
+                        auto_fetch=values["auto_fetch"],
+                        fetch_interval=values["interval"],
                     )
 
-                # Queue initial email fetch (regardless of auto_fetch setting)
+                # Queue initial email fetch
                 if self.app.fetch_queue_service:
                     await self.app.fetch_queue_service.queue_fetch(
                         newsletter.id, FetchPriority.HIGH
@@ -249,66 +397,33 @@ class NewslettersPage(ft.View):
             dialog.open = False
             self.app.page.update()
 
-        dialog = ft.AlertDialog(
-            title=ft.Text("Add Newsletter"),
-            content=ft.Column(
-                [
-                    name_field,
-                    ft.Container(height=8),
-                    label_dropdown,
-                    ft.Container(height=8),
-                    auto_fetch_switch,
-                    ft.Container(height=8),
-                    interval_field,
-                ],
-                tight=True,
-                width=400,
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
-                ft.Button("Add", on_click=lambda e: self.app.page.run_task(save_newsletter, e)),
-            ],
+        dialog = AddNewsletterDialog(
+            labels=labels,
+            on_save=lambda e: self.app.page.run_task(save_newsletter, e),
+            on_cancel=close_dialog,
         )
 
         self.app.page.show_dialog(dialog)
 
     def _show_edit_dialog(self, newsletter) -> None:
         """Show dialog to edit a newsletter."""
-        name_field = ft.TextField(
-            label="Newsletter Name",
-            value=newsletter.name,
-        )
 
-        auto_fetch_switch = ft.Switch(
-            label="Auto-fetch enabled",
-            value=newsletter.auto_fetch_enabled,
-        )
-
-        interval_field = ft.TextField(
-            label="Fetch interval (minutes)",
-            value=str(newsletter.fetch_interval_minutes),
-            keyboard_type=ft.KeyboardType.NUMBER,
-        )
-
-        async def save_changes(e: ft.ControlEvent) -> None:
+        async def save_changes(e) -> None:
             try:
-                name = (name_field.value or "").strip()
+                values = dialog.get_values()
+                name = (values["name"] or "").strip()
+
                 if not name:
                     self.app.show_snackbar("Name is required", error=True)
                     return
-
-                try:
-                    interval = int(interval_field.value or "1440")
-                except ValueError:
-                    interval = 1440
 
                 async with self.app.get_session() as session:
                     service = NewsletterService(session=session)
                     await service.update_newsletter(
                         newsletter_id=newsletter.id,
                         name=name,
-                        auto_fetch=auto_fetch_switch.value,
-                        fetch_interval=interval,
+                        auto_fetch=values["auto_fetch"],
+                        fetch_interval=values["interval"],
                     )
 
                 dialog.open = False
@@ -322,28 +437,10 @@ class NewslettersPage(ft.View):
             dialog.open = False
             self.app.page.update()
 
-        dialog = ft.AlertDialog(
-            title=ft.Text("Edit Newsletter"),
-            content=ft.Column(
-                [
-                    name_field,
-                    ft.Container(height=8),
-                    ft.Text(
-                        f"Gmail Label: {newsletter.gmail_label_name}",
-                        color=ft.Colors.ON_SURFACE_VARIANT,
-                    ),
-                    ft.Container(height=8),
-                    auto_fetch_switch,
-                    ft.Container(height=8),
-                    interval_field,
-                ],
-                tight=True,
-                width=400,
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
-                ft.Button("Save", on_click=lambda e: self.app.page.run_task(save_changes, e)),
-            ],
+        dialog = EditNewsletterDialog(
+            newsletter=newsletter,
+            on_save=lambda e: self.app.page.run_task(save_changes, e),
+            on_cancel=close_dialog,
         )
 
         self.app.page.show_dialog(dialog)
@@ -351,7 +448,7 @@ class NewslettersPage(ft.View):
     def _confirm_delete(self, newsletter) -> None:
         """Show confirmation dialog for deletion."""
 
-        async def delete(e: ft.ControlEvent) -> None:
+        async def delete(e) -> None:
             try:
                 async with self.app.get_session() as session:
                     service = NewsletterService(session=session)
@@ -368,20 +465,14 @@ class NewslettersPage(ft.View):
             dialog.open = False
             self.app.page.update()
 
-        dialog = ft.AlertDialog(
-            title=ft.Text("Delete Newsletter"),
-            content=ft.Text(
-                f"Are you sure you want to delete '{newsletter.name}'?\n"
-                "All emails will also be deleted."
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog),
-                ft.Button(
-                    "Delete",
-                    color=ft.Colors.ERROR,
-                    on_click=lambda e: self.app.page.run_task(delete, e),
-                ),
-            ],
+        dialog = ConfirmDialog(
+            title="Delete Newsletter",
+            message=f"Are you sure you want to delete '{newsletter.name}'?\nAll emails will also be deleted.",
+            confirm_text="Delete",
+            cancel_text="Cancel",
+            is_destructive=True,
+            on_confirm=lambda e: self.app.page.run_task(delete, e),
+            on_cancel=close_dialog,
         )
 
         self.app.page.show_dialog(dialog)

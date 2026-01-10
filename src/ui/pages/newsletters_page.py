@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import flet as ft
 
+from src.services.fetch_queue_service import FetchPriority
 from src.services.gmail_service import GmailLabel
 from src.services.newsletter_service import NewsletterService
 
@@ -223,12 +224,18 @@ class NewslettersPage(ft.View):
                         )
                         return
 
-                    await service.create_newsletter(
+                    newsletter = await service.create_newsletter(
                         name=name,
                         gmail_label_id=label_id,
                         gmail_label_name=label_name,
                         auto_fetch=auto_fetch_switch.value,
                         fetch_interval=interval,
+                    )
+
+                # Queue initial email fetch (regardless of auto_fetch setting)
+                if self.app.fetch_queue_service:
+                    await self.app.fetch_queue_service.queue_fetch(
+                        newsletter.id, FetchPriority.HIGH
                     )
 
                 dialog.open = False

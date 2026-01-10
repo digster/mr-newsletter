@@ -45,6 +45,10 @@ class Newsletter(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
     )
+    last_email_received_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     unread_count: Mapped[int] = mapped_column(Integer, default=0)
     total_count: Mapped[int] = mapped_column(Integer, default=0)
 

@@ -1,10 +1,12 @@
 """Newsletter card component with sophisticated styling."""
 
+from datetime import datetime
 from typing import Callable, Optional
 
 import flet as ft
 
 from src.ui.themes import BorderRadius, Colors, Shadows, Spacing, Typography
+from src.ui.utils import format_relative_time
 
 
 class NewsletterCard(ft.Container):
@@ -16,6 +18,7 @@ class NewsletterCard(ft.Container):
         label: str,
         unread_count: int,
         total_count: int,
+        last_email_received_at: Optional[datetime] = None,
         color: Optional[str] = None,
         on_click: Optional[Callable] = None,
         on_refresh: Optional[Callable] = None,
@@ -24,6 +27,7 @@ class NewsletterCard(ft.Container):
         self.label = label
         self.unread_count = unread_count
         self.total_count = total_count
+        self.last_email_received_at = last_email_received_at
         self.accent_color = color or Colors.Light.ACCENT
         self._on_click = on_click
         self._on_refresh = on_refresh
@@ -78,7 +82,24 @@ class NewsletterCard(ft.Container):
                     max_lines=1,
                     overflow=ft.TextOverflow.ELLIPSIS,
                 ),
-                ft.Container(height=Spacing.MD),
+                ft.Container(height=Spacing.XS),
+                # Recent activity
+                ft.Row(
+                    [
+                        ft.Icon(
+                            ft.Icons.ACCESS_TIME,
+                            size=14,
+                            color=Colors.Light.TEXT_TERTIARY,
+                        ),
+                        ft.Container(width=Spacing.XXS),
+                        ft.Text(
+                            format_relative_time(self.last_email_received_at),
+                            size=Typography.CAPTION_SIZE,
+                            color=Colors.Light.TEXT_TERTIARY,
+                        ),
+                    ],
+                ),
+                ft.Container(height=Spacing.SM),
                 # Stats row with monospace numbers
                 ft.Row(
                     [

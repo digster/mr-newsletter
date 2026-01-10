@@ -91,12 +91,15 @@ class NewsletterService:
         """
         newsletters = await self.newsletter_repo.get_all_active()
 
-        # Update counts for each newsletter
+        # Update counts and last email received for each newsletter
         for newsletter in newsletters:
             newsletter.unread_count = await self.email_repo.get_unread_count(
                 newsletter.id
             )
             newsletter.total_count = await self.email_repo.get_count(newsletter.id)
+            newsletter.last_email_received_at = (
+                await self.email_repo.get_latest_received_at(newsletter.id)
+            )
 
         return newsletters
 
@@ -202,6 +205,9 @@ class NewsletterService:
         newsletter.last_fetched_at = datetime.now(timezone.utc)
         newsletter.total_count = await self.email_repo.get_count(newsletter_id)
         newsletter.unread_count = await self.email_repo.get_unread_count(newsletter_id)
+        newsletter.last_email_received_at = await self.email_repo.get_latest_received_at(
+            newsletter_id
+        )
         await self.newsletter_repo.update(newsletter)
 
         await self.session.commit()

@@ -8,11 +8,10 @@ import flet as ft
 from src.models.newsletter import Newsletter
 from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
-from src.ui.components import NewsletterCard, Sidebar
+from src.ui.components import Sidebar
 from src.ui.components.newsletter_list_item import NewsletterListItem
 from src.ui.components.search_bar import SearchBar
 from src.ui.components.sort_dropdown import SortDropdown
-from src.ui.components.view_mode_toggle import ViewModeToggle
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
@@ -28,20 +27,8 @@ class HomePage(ft.View):
         self.newsletters: List[Newsletter] = []
 
         # View state
-        self.view_mode = "grid"
         self.search_query = ""
         self.sort_by = "recent"
-
-        # Grid view
-        self.newsletters_grid = ft.GridView(
-            expand=True,
-            runs_count=3,
-            max_extent=350,
-            child_aspect_ratio=1.3,
-            spacing=Spacing.MD,
-            run_spacing=Spacing.MD,
-            padding=0,
-        )
 
         # List view
         self.newsletters_list = ft.ListView(
@@ -59,11 +46,6 @@ class HomePage(ft.View):
         self.sort_dropdown = SortDropdown(
             current_sort=self.sort_by,
             on_change=self._on_sort_change,
-        )
-
-        self.view_toggle = ViewModeToggle(
-            current_mode=self.view_mode,
-            on_change=self._on_view_mode_change,
         )
 
         self.loading = ft.ProgressRing(
@@ -180,8 +162,6 @@ class HomePage(ft.View):
                                                 self.search_bar,
                                                 ft.Container(expand=True),
                                                 self.sort_dropdown,
-                                                ft.Container(width=Spacing.SM),
-                                                self.view_toggle,
                                             ],
                                             vertical_alignment=ft.CrossAxisAlignment.CENTER,
                                         ),
@@ -193,7 +173,6 @@ class HomePage(ft.View):
                             ft.Container(
                                 content=ft.Stack(
                                     [
-                                        self.newsletters_grid,
                                         self.newsletters_list,
                                         self.empty_state,
                                     ],
@@ -241,23 +220,6 @@ class HomePage(ft.View):
         finally:
             self.loading.visible = False
             self.app.page.update()
-
-    def _create_newsletter_card(self, newsletter: Newsletter) -> ft.Control:
-        """Create a card for a newsletter."""
-        return NewsletterCard(
-            name=newsletter.name,
-            label=newsletter.gmail_label_name,
-            unread_count=newsletter.unread_count,
-            total_count=newsletter.total_count,
-            last_email_received_at=newsletter.last_email_received_at,
-            color=newsletter.color,
-            on_click=lambda _, nid=newsletter.id: self.app.navigate(
-                f"/newsletter/{nid}"
-            ),
-            on_refresh=lambda _, nid=newsletter.id: self.app.page.run_task(
-                self._fetch_newsletter, nid
-            ),
-        )
 
     def _create_newsletter_list_item(self, newsletter: Newsletter) -> ft.Control:
         """Create a list item for a newsletter."""
@@ -312,12 +274,6 @@ class HomePage(ft.View):
         self._render_newsletters()
         self.app.page.update()
 
-    def _on_view_mode_change(self, mode: str) -> None:
-        """Handle view mode toggle."""
-        self.view_mode = mode
-        self._render_newsletters()
-        self.app.page.update()
-
     def _filter_and_sort_newsletters(self) -> List[Newsletter]:
         """Filter and sort newsletters based on current state."""
         result = self.newsletters
@@ -346,30 +302,19 @@ class HomePage(ft.View):
         return result
 
     def _render_newsletters(self) -> None:
-        """Render newsletters in current view mode."""
+        """Render newsletters in list view."""
         filtered = self._filter_and_sort_newsletters()
 
-        # Clear both views
-        self.newsletters_grid.controls.clear()
         self.newsletters_list.controls.clear()
 
         if not filtered:
-            self.newsletters_grid.visible = False
             self.newsletters_list.visible = False
             self.empty_state.visible = True
             return
 
         self.empty_state.visible = False
+        self.newsletters_list.visible = True
 
-        if self.view_mode == "grid":
-            for newsletter in filtered:
-                card = self._create_newsletter_card(newsletter)
-                self.newsletters_grid.controls.append(card)
-            self.newsletters_grid.visible = True
-            self.newsletters_list.visible = False
-        else:  # list mode
-            for newsletter in filtered:
-                item = self._create_newsletter_list_item(newsletter)
-                self.newsletters_list.controls.append(item)
-            self.newsletters_grid.visible = False
-            self.newsletters_list.visible = True
+        for newsletter in filtered:
+            item = self._create_newsletter_list_item(newsletter)
+            self.newsletters_list.controls.append(item)

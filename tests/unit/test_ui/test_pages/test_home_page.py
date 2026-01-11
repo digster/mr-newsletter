@@ -50,20 +50,13 @@ class TestHomePage:
             page = HomePage(app=mock_app)
             assert page.sidebar is not None
 
-    def test_home_page_has_grid_view(self, mock_app):
-        """Test page has a GridView for newsletters."""
+    def test_home_page_has_list_view(self, mock_app):
+        """Test page has a ListView for newsletters."""
         with patch('src.ui.pages.home_page.NewsletterService'):
             from src.ui.pages.home_page import HomePage
             page = HomePage(app=mock_app)
-            assert page.newsletters_grid is not None
-            assert isinstance(page.newsletters_grid, ft.GridView)
-
-    def test_home_page_grid_has_columns(self, mock_app):
-        """Test GridView has columns configured."""
-        with patch('src.ui.pages.home_page.NewsletterService'):
-            from src.ui.pages.home_page import HomePage
-            page = HomePage(app=mock_app)
-            assert page.newsletters_grid.runs_count is not None
+            assert page.newsletters_list is not None
+            assert isinstance(page.newsletters_list, ft.ListView)
 
     def test_home_page_has_loading_indicator(self, mock_app):
         """Test page has a loading ProgressRing."""

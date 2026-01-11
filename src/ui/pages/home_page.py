@@ -37,6 +37,7 @@ class HomePage(ft.View):
             expand=True,
             runs_count=3,
             max_extent=350,
+            child_aspect_ratio=1.3,
             spacing=Spacing.MD,
             run_spacing=Spacing.MD,
             padding=0,

@@ -118,8 +118,8 @@ class TestNewsletterCard:
         )
         assert card._on_refresh == callback
 
-    def test_newsletter_card_has_color_dot(self):
-        """Test card has color indicator dot."""
+    def test_newsletter_card_has_title_in_header(self):
+        """Test card has title in header row."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
@@ -128,15 +128,13 @@ class TestNewsletterCard:
         )
         column = card.content
         header_row = column.controls[0]
-        # Color dot is the first control in header row
-        color_dot = header_row.controls[0]
-        assert isinstance(color_dot, ft.Container)
-        assert color_dot.width == 10
-        assert color_dot.height == 10
-        assert color_dot.border_radius == BorderRadius.FULL
+        # Title is the first control in header row
+        title = header_row.controls[0]
+        assert isinstance(title, ft.Text)
+        assert title.value == "Newsletter"
 
     def test_newsletter_card_has_view_button(self):
-        """Test card has View emails button."""
+        """Test card has View emails button container."""
         card = NewsletterCard(
             name="Newsletter",
             label="Label",
@@ -144,10 +142,10 @@ class TestNewsletterCard:
             total_count=0,
         )
         column = card.content
-        # Actions row is the last control in column
-        actions_row = column.controls[-1]
-        view_button = actions_row.controls[0]
-        assert isinstance(view_button, ft.TextButton)
+        # View button is a Container with bgcolor (index 5 after header, subtitle, spacer, stats, spacer)
+        view_button = column.controls[5]
+        assert isinstance(view_button, ft.Container)
+        assert view_button.bgcolor == Colors.Light.ACCENT_MUTED
 
     def test_newsletter_card_has_refresh_icon_button(self):
         """Test card has refresh IconButton."""
@@ -194,7 +192,7 @@ class TestNewsletterCard:
             unread_count=0,
             total_count=0,
         )
-        assert card.padding == Spacing.MD
+        assert card.padding == Spacing.SM
 
     def test_newsletter_card_has_border_radius(self):
         """Test card has proper border radius."""

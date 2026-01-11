@@ -34,7 +34,7 @@ class NewsletterCard(ft.Container):
 
         super().__init__(
             content=self._build_content(),
-            padding=Spacing.MD,
+            padding=Spacing.SM,
             border_radius=BorderRadius.MD,
             border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
             bgcolor=Colors.Light.BG_PRIMARY,
@@ -52,16 +52,9 @@ class NewsletterCard(ft.Container):
         """Build card content."""
         return ft.Column(
             [
-                # Header row with color dot and name
+                # Header row: Title on left, timestamp on right
                 ft.Row(
                     [
-                        ft.Container(
-                            width=10,
-                            height=10,
-                            border_radius=BorderRadius.FULL,
-                            bgcolor=self.accent_color,
-                        ),
-                        ft.Container(width=Spacing.SM),
                         ft.Text(
                             self.name,
                             size=Typography.H4_SIZE,
@@ -69,23 +62,8 @@ class NewsletterCard(ft.Container):
                             color=Colors.Light.TEXT_PRIMARY,
                             max_lines=1,
                             overflow=ft.TextOverflow.ELLIPSIS,
-                            expand=True,
                         ),
-                    ],
-                ),
-                ft.Container(height=Spacing.XXS),
-                # Label as caption
-                ft.Text(
-                    self.label,
-                    size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
-                    max_lines=1,
-                    overflow=ft.TextOverflow.ELLIPSIS,
-                ),
-                ft.Container(height=Spacing.XS),
-                # Recent activity
-                ft.Row(
-                    [
+                        ft.Container(expand=True),
                         ft.Icon(
                             ft.Icons.ACCESS_TIME,
                             size=14,
@@ -98,9 +76,18 @@ class NewsletterCard(ft.Container):
                             color=Colors.Light.TEXT_TERTIARY,
                         ),
                     ],
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
-                ft.Container(height=Spacing.SM),
-                # Stats row with monospace numbers
+                # Subtitle
+                ft.Text(
+                    self.label,
+                    size=Typography.CAPTION_SIZE,
+                    color=Colors.Light.TEXT_TERTIARY,
+                    max_lines=1,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                ),
+                ft.Container(height=Spacing.MD),
+                # Stats row - centered
                 ft.Row(
                     [
                         self._build_stat(
@@ -108,45 +95,40 @@ class NewsletterCard(ft.Container):
                             "unread",
                             highlight=self.unread_count > 0,
                         ),
-                        ft.Container(width=Spacing.XL),
                         self._build_stat(str(self.total_count), "total"),
                     ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=Spacing.XXL,
                 ),
                 ft.Container(height=Spacing.MD),
-                # Divider
-                ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
-                ft.Container(height=Spacing.SM),
-                # Actions row
+                # View emails button - full width with background
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Text(
+                                "View emails",
+                                size=Typography.BODY_SIZE,
+                                weight=ft.FontWeight.W_500,
+                                color=Colors.Light.ACCENT,
+                            ),
+                            ft.Icon(
+                                ft.Icons.ARROW_FORWARD,
+                                size=18,
+                                color=Colors.Light.ACCENT,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=Spacing.XS,
+                    ),
+                    bgcolor=Colors.Light.ACCENT_MUTED,
+                    border_radius=BorderRadius.SM,
+                    padding=ft.padding.symmetric(vertical=Spacing.SM),
+                    on_click=self._on_click,
+                ),
+                ft.Container(height=Spacing.XS),
+                # Refresh icon - right aligned
                 ft.Row(
                     [
-                        ft.TextButton(
-                            content=ft.Row(
-                                [
-                                    ft.Text(
-                                        "View emails",
-                                        size=Typography.BODY_SMALL_SIZE,
-                                        color=Colors.Light.ACCENT,
-                                    ),
-                                    ft.Icon(
-                                        ft.Icons.ARROW_FORWARD,
-                                        size=16,
-                                        color=Colors.Light.ACCENT,
-                                    ),
-                                ],
-                                spacing=Spacing.XXS,
-                            ),
-                            style=ft.ButtonStyle(
-                                padding=ft.padding.symmetric(
-                                    horizontal=Spacing.XS,
-                                    vertical=Spacing.XXS,
-                                ),
-                                shape=ft.RoundedRectangleBorder(
-                                    radius=BorderRadius.SM
-                                ),
-                            ),
-                            on_click=self._on_click,
-                        ),
-                        ft.Container(expand=True),
                         ft.IconButton(
                             icon=ft.Icons.REFRESH,
                             icon_size=18,
@@ -160,6 +142,7 @@ class NewsletterCard(ft.Container):
                             on_click=self._on_refresh,
                         ),
                     ],
+                    alignment=ft.MainAxisAlignment.END,
                 ),
             ],
             spacing=0,
@@ -168,15 +151,14 @@ class NewsletterCard(ft.Container):
     def _build_stat(
         self, value: str, label: str, highlight: bool = False
     ) -> ft.Control:
-        """Build a stat display with monospace numbers."""
+        """Build a stat display with large centered numbers."""
         return ft.Column(
             [
                 ft.Text(
                     value,
-                    size=Typography.H2_SIZE,
+                    size=Typography.H1_SIZE,
                     weight=ft.FontWeight.W_600,
                     color=Colors.Light.ACCENT if highlight else Colors.Light.TEXT_PRIMARY,
-                    font_family="monospace",
                 ),
                 ft.Text(
                     label,
@@ -184,7 +166,7 @@ class NewsletterCard(ft.Container):
                     color=Colors.Light.TEXT_TERTIARY,
                 ),
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.START,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=Spacing.XXS,
         )
 

@@ -42,6 +42,7 @@ class EmailService:
         limit: int = 50,
         offset: int = 0,
         unread_only: bool = False,
+        starred_only: bool = False,
     ) -> Sequence[Email]:
         """Get emails for a newsletter.
 
@@ -50,6 +51,7 @@ class EmailService:
             limit: Maximum emails to return.
             offset: Number of emails to skip.
             unread_only: Only return unread emails.
+            starred_only: Only return starred emails.
 
         Returns:
             List of emails.
@@ -59,6 +61,7 @@ class EmailService:
             limit=limit,
             offset=offset,
             unread_only=unread_only,
+            starred_only=starred_only,
         )
 
     async def mark_as_read(self, email_id: int) -> Optional[Email]:
@@ -164,6 +167,40 @@ class EmailService:
             Total count.
         """
         return await self.email_repo.get_count(newsletter_id)
+
+    async def get_starred_count(self, newsletter_id: int) -> int:
+        """Get starred email count for newsletter.
+
+        Args:
+            newsletter_id: Newsletter ID.
+
+        Returns:
+            Starred count.
+        """
+        return await self.email_repo.get_starred_count(newsletter_id)
+
+    async def get_filtered_count(
+        self,
+        newsletter_id: int,
+        unread_only: bool = False,
+        starred_only: bool = False,
+    ) -> int:
+        """Get email count with filters applied.
+
+        Args:
+            newsletter_id: Newsletter ID.
+            unread_only: Only count unread emails.
+            starred_only: Only count starred emails.
+
+        Returns:
+            Filtered count.
+        """
+        if starred_only:
+            return await self.email_repo.get_starred_count(newsletter_id)
+        elif unread_only:
+            return await self.email_repo.get_unread_count(newsletter_id)
+        else:
+            return await self.email_repo.get_count(newsletter_id)
 
     async def _update_newsletter_count(self, newsletter_id: int) -> None:
         """Update newsletter unread count.

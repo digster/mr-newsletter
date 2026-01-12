@@ -1,6 +1,7 @@
 """Email list page for a newsletter with sidebar navigation."""
 
 import asyncio
+import math
 from typing import TYPE_CHECKING
 
 import flet as ft
@@ -61,6 +62,12 @@ class EmailListPage(ft.View):
         self.newsletter = None
         self.newsletters = []
         self.current_filter = "all"  # all, unread, starred
+
+        # Pagination state
+        self.current_page = 1
+        self.page_size = 20
+        self.total_emails = 0
+        self.total_pages = 0
 
         self.emails_list = ft.ListView(
             expand=True,
@@ -144,6 +151,52 @@ class EmailListPage(ft.View):
             spacing=Spacing.XXS,
         )
 
+        # Pagination controls
+        self.prev_button = ft.IconButton(
+            icon=ft.Icons.CHEVRON_LEFT,
+            icon_color=Colors.Light.TEXT_DISABLED,
+            icon_size=20,
+            disabled=True,
+            tooltip="Previous page",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+            ),
+            on_click=lambda _: self._on_prev_page(),
+        )
+
+        self.next_button = ft.IconButton(
+            icon=ft.Icons.CHEVRON_RIGHT,
+            icon_color=Colors.Light.TEXT_DISABLED,
+            icon_size=20,
+            disabled=True,
+            tooltip="Next page",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+            ),
+            on_click=lambda _: self._on_next_page(),
+        )
+
+        self.page_indicator = ft.Text(
+            "Page 1 of 1",
+            size=Typography.BODY_SMALL_SIZE,
+            color=Colors.Light.TEXT_SECONDARY,
+        )
+
+        self.pagination_controls = ft.Container(
+            content=ft.Row(
+                [
+                    self.prev_button,
+                    ft.Container(width=Spacing.SM),
+                    self.page_indicator,
+                    ft.Container(width=Spacing.SM),
+                    self.next_button,
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            padding=ft.padding.symmetric(vertical=Spacing.MD),
+            visible=False,  # Hidden until data loads
+        )
+
         self.controls = [self._build_content()]
 
         # Load data
@@ -217,6 +270,8 @@ class EmailListPage(ft.View):
                                 ),
                                 expand=True,
                             ),
+                            # Pagination controls
+                            self.pagination_controls,
                         ],
                         expand=True,
                     ),
@@ -236,6 +291,8 @@ class EmailListPage(ft.View):
     def _on_filter_change(self, filter_key: str) -> None:
         """Handle filter tab change."""
         self.current_filter = filter_key
+        # Reset to first page when filter changes
+        self.current_page = 1
         # Update tab states
         for tab in self.filter_tabs.controls:
             is_active = tab.filter_key == filter_key
@@ -274,20 +331,35 @@ class EmailListPage(ft.View):
 
                 self.title_text.value = self.newsletter.name
 
-                # Load emails with filter
+                # Load emails with filter and pagination
                 email_service = EmailService(session)
-                if self.current_filter == "unread":
-                    emails = await email_service.get_emails_for_newsletter(
-                        self.newsletter_id, limit=100, unread_only=True
-                    )
-                elif self.current_filter == "starred":
-                    emails = await email_service.get_emails_for_newsletter(
-                        self.newsletter_id, limit=100, starred_only=True
-                    )
-                else:
-                    emails = await email_service.get_emails_for_newsletter(
-                        self.newsletter_id, limit=100
-                    )
+                offset = (self.current_page - 1) * self.page_size
+
+                # Determine filter flags
+                unread_only = self.current_filter == "unread"
+                starred_only = self.current_filter == "starred"
+
+                # Get total count for pagination
+                self.total_emails = await email_service.get_filtered_count(
+                    self.newsletter_id,
+                    unread_only=unread_only,
+                    starred_only=starred_only,
+                )
+                self.total_pages = max(1, math.ceil(self.total_emails / self.page_size))
+
+                # Ensure current page is valid
+                if self.current_page > self.total_pages:
+                    self.current_page = self.total_pages
+                    offset = (self.current_page - 1) * self.page_size
+
+                # Fetch emails for current page
+                emails = await email_service.get_emails_for_newsletter(
+                    self.newsletter_id,
+                    limit=self.page_size,
+                    offset=offset,
+                    unread_only=unread_only,
+                    starred_only=starred_only,
+                )
 
                 # Extract email data while still in session context
                 email_data = []
@@ -319,6 +391,9 @@ class EmailListPage(ft.View):
                     self.emails_list.controls.append(item)
             else:
                 self.empty_state.visible = True
+
+            # Update pagination controls
+            self._update_pagination_controls()
 
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
@@ -365,3 +440,37 @@ class EmailListPage(ft.View):
             await self._load_data()
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
+
+    def _update_pagination_controls(self) -> None:
+        """Update pagination controls based on current state."""
+        # Update page indicator
+        self.page_indicator.value = f"Page {self.current_page} of {self.total_pages}"
+
+        # Update prev button
+        can_go_prev = self.current_page > 1
+        self.prev_button.disabled = not can_go_prev
+        self.prev_button.icon_color = (
+            Colors.Light.TEXT_SECONDARY if can_go_prev else Colors.Light.TEXT_DISABLED
+        )
+
+        # Update next button
+        can_go_next = self.current_page < self.total_pages
+        self.next_button.disabled = not can_go_next
+        self.next_button.icon_color = (
+            Colors.Light.TEXT_SECONDARY if can_go_next else Colors.Light.TEXT_DISABLED
+        )
+
+        # Show pagination only if there are emails
+        self.pagination_controls.visible = self.total_emails > 0
+
+    def _on_prev_page(self) -> None:
+        """Navigate to previous page."""
+        if self.current_page > 1:
+            self.current_page -= 1
+            self.app.page.run_task(self._load_data)
+
+    def _on_next_page(self) -> None:
+        """Navigate to next page."""
+        if self.current_page < self.total_pages:
+            self.current_page += 1
+            self.app.page.run_task(self._load_data)

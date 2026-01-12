@@ -65,3 +65,21 @@ class TestEmailList:
             base_page.navigate_to(f"/newsletter/{newsletter_id}")
             base_page.clear_errors()
             assert base_page.has_canvas(), f"Canvas should load for ID {newsletter_id}"
+
+    def test_email_list_pagination_screenshot(
+        self, page: Page, flet_app: subprocess.Popen
+    ):
+        """Take screenshot of email list page with pagination controls for verification.
+
+        This test captures a screenshot of the email list page which should now include
+        pagination controls at the bottom. The screenshot can be analyzed to verify:
+        - Pagination controls are visible (prev/next buttons, page indicator)
+        - Controls are properly styled following the design system
+        - Page indicator shows correct format (e.g., "Page 1 of 3")
+        """
+        base_page = BasePage(page)
+        base_page.navigate_to("/newsletter/1")
+        base_page.wait_for_timeout(2000)  # Wait for data load and animations
+
+        screenshot_path = base_page.take_screenshot("email_list_pagination")
+        assert screenshot_path.exists(), "Pagination screenshot should be saved"

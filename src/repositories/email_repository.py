@@ -54,6 +54,7 @@ class EmailRepository(BaseRepository[Email]):
         limit: int = 50,
         offset: int = 0,
         unread_only: bool = False,
+        starred_only: bool = False,
     ) -> Sequence[Email]:
         """Get emails for a newsletter.
 
@@ -62,6 +63,7 @@ class EmailRepository(BaseRepository[Email]):
             limit: Maximum number of emails to return.
             offset: Number of emails to skip.
             unread_only: If True, only return unread emails.
+            starred_only: If True, only return starred emails.
 
         Returns:
             List of emails.
@@ -77,6 +79,9 @@ class EmailRepository(BaseRepository[Email]):
 
         if unread_only:
             query = query.where(Email.is_read == False)  # noqa: E712
+
+        if starred_only:
+            query = query.where(Email.is_starred == True)  # noqa: E712
 
         result = await self.session.execute(query)
         return result.scalars().all()
@@ -112,6 +117,24 @@ class EmailRepository(BaseRepository[Email]):
             select(func.count())
             .select_from(Email)
             .where(Email.newsletter_id == newsletter_id)
+            .where(Email.is_archived == False)  # noqa: E712
+        )
+        return result.scalar() or 0
+
+    async def get_starred_count(self, newsletter_id: int) -> int:
+        """Get count of starred emails for a newsletter.
+
+        Args:
+            newsletter_id: Newsletter ID.
+
+        Returns:
+            Count of starred emails.
+        """
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Email)
+            .where(Email.newsletter_id == newsletter_id)
+            .where(Email.is_starred == True)  # noqa: E712
             .where(Email.is_archived == False)  # noqa: E712
         )
         return result.scalar() or 0

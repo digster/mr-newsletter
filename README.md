@@ -1,6 +1,9 @@
 # Newsletter Manager
 
-A desktop and web application for reading newsletters from your Gmail inbox. Built with Python, Flet, and PostgreSQL.
+A desktop and web application for reading newsletters from your Gmail inbox. Built with Python and Flet.
+
+- **Desktop mode**: Uses SQLite (no database setup required)
+- **Web mode**: Uses PostgreSQL
 
 ## Features
 
@@ -16,7 +19,7 @@ A desktop and web application for reading newsletters from your Gmail inbox. Bui
 
 - Python 3.11+
 - [UV](https://docs.astral.sh/uv/) package manager
-- PostgreSQL 16+
+- PostgreSQL 16+ (only for web mode)
 - Docker & Docker Compose (for containerized deployment)
 - Google Cloud Console account
 
@@ -79,6 +82,20 @@ cp .env.example .env
 
 ### Running Locally
 
+#### Desktop Mode (SQLite - No Database Setup Required)
+
+```bash
+# Start the desktop application
+uv run python -m src.main
+```
+
+The SQLite database is created automatically in your user data directory:
+- **Linux**: `~/.local/share/mr-newsletter/newsletter.db`
+- **macOS**: `~/Library/Application Support/mr-newsletter/newsletter.db`
+- **Windows**: `%LOCALAPPDATA%/mr-newsletter/newsletter.db`
+
+#### Web Mode (PostgreSQL Required)
+
 1. **Start PostgreSQL** (or use Docker):
    ```bash
    docker run -d \
@@ -92,21 +109,18 @@ cp .env.example .env
 
 2. **Run database migrations**:
    ```bash
-   uv run alembic upgrade head
+   FLET_WEB_APP=true uv run alembic upgrade head
    ```
 
-3. **Start the application**:
+3. **Start the web application**:
    ```bash
-   # Desktop app mode
-   uv run python -m src.main
-
-   # Web app mode
    FLET_WEB_APP=true uv run python -m src.main
    ```
 
-4. **Open the app** and sign in:
-   - Sign in with your Gmail account
-   - Add newsletters by selecting Gmail labels
+#### After Starting
+
+- Sign in with your Gmail account
+- Add newsletters by selecting Gmail labels
 
 ## Docker Deployment
 
@@ -189,14 +203,15 @@ If you encounter missing module errors at runtime, add them via `--hidden-import
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `ENVIRONMENT` | Runtime environment (development/production) | development |
-| `DATABASE_URL` | PostgreSQL connection URL | postgresql+asyncpg://... |
+| `FLET_WEB_APP` | Run as web app (true/false) | false |
+| `POSTGRES_DATABASE_URL` | PostgreSQL connection URL (web mode only) | postgresql+asyncpg://... |
+| `SQLITE_DB_NAME` | SQLite database filename (desktop mode only) | newsletter.db |
 | `POSTGRES_PASSWORD` | PostgreSQL password (Docker) | - |
 | `ENCRYPTION_KEY` | Key for encrypting credentials in DB | - |
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID (required) | - |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret (required) | - |
 | `FLET_HOST` | Host to bind to | 127.0.0.1 |
 | `FLET_PORT` | Port to listen on | 8550 |
-| `FLET_WEB_APP` | Run as web app (true/false) | false |
 | `DEFAULT_FETCH_INTERVAL` | Default fetch interval in minutes | 1440 |
 | `FETCH_QUEUE_DELAY_SECONDS` | Delay between newsletter fetches | 5 |
 | `LOG_LEVEL` | Logging level | INFO |
@@ -334,7 +349,9 @@ uv run mypy src/
 ## Security Notes
 
 - Google OAuth client credentials (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`) are read from environment variables
-- User OAuth tokens are stored encrypted in PostgreSQL using the `ENCRYPTION_KEY`
+- User OAuth tokens are stored encrypted in the database using the `ENCRYPTION_KEY`:
+  - Desktop mode: Encrypted in local SQLite database
+  - Web mode: Encrypted in PostgreSQL database
 - **Never commit `.env` files or expose your credentials and encryption key**
 - In production, use a strong, unique encryption key (32+ characters)
 
@@ -346,11 +363,12 @@ uv run mypy src/
 - Verify your email is added as a test user
 - Check that scopes are correctly configured
 
-### Database Connection Issues
+### Database Connection Issues (Web Mode)
 
 - Verify PostgreSQL is running
-- Check DATABASE_URL format
+- Check `POSTGRES_DATABASE_URL` format
 - Ensure database exists and user has permissions
+- Make sure `FLET_WEB_APP=true` is set when running migrations
 
 ### Fetch Not Working
 

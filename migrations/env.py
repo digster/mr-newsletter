@@ -6,7 +6,6 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from src.config.settings import get_settings
-from src.models.base import Base
 
 # Import all models to ensure they're registered with Base.metadata
 from src.models import (  # noqa: F401
@@ -15,6 +14,7 @@ from src.models import (  # noqa: F401
     UserCredential,
     UserSettings,
 )
+from src.models.base import Base
 
 # this is the Alembic Config object
 config = context.config
@@ -31,6 +31,11 @@ def get_url() -> str:
     """Get database URL from settings."""
     settings = get_settings()
     return settings.sync_database_url
+
+
+def is_sqlite() -> bool:
+    """Check if using SQLite database."""
+    return get_url().startswith("sqlite")
 
 
 def run_migrations_offline() -> None:
@@ -50,6 +55,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=is_sqlite(),  # Required for SQLite ALTER TABLE support
     )
 
     with context.begin_transaction():
@@ -75,6 +81,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            render_as_batch=is_sqlite(),  # Required for SQLite ALTER TABLE support
         )
 
         with context.begin_transaction():

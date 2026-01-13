@@ -35,7 +35,7 @@ run-web:
 
 build:
 	uv run flet pack src/main.py \
-		--name "Newsletter Manager" \
+		--name "Mr Newsletter" \
 		--add-data "src/config:src/config" \
 		--add-data "src/ui:src/ui" \
 		--hidden-import sqlalchemy \

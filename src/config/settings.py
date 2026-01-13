@@ -1,5 +1,6 @@
 """Configuration management using Pydantic Settings."""
 
+import platform
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -30,10 +31,16 @@ class Settings(BaseSettings):
         default_factory=lambda: Path(__file__).parent.parent.parent,
     )
 
-    # Database
-    database_url: str = Field(
+    # Database - PostgreSQL (for web mode)
+    postgres_database_url: str = Field(
         default="postgresql+asyncpg://newsletter:password@localhost:5432/newsletter",
-        description="PostgreSQL connection URL",
+        description="PostgreSQL connection URL for web mode",
+    )
+
+    # Database - SQLite (for desktop mode)
+    sqlite_db_name: str = Field(
+        default="newsletter.db",
+        description="SQLite database filename for desktop mode",
     )
 
     # Security - Encryption key for credentials in DB
@@ -102,9 +109,49 @@ class Settings(BaseSettings):
         return self.environment == "test"
 
     @property
+    def is_desktop_mode(self) -> bool:
+        """Check if running in desktop mode (uses SQLite)."""
+        return not self.flet_web_app
+
+    @property
+    def user_data_dir(self) -> Path:
+        """Get platform-appropriate user data directory for SQLite database."""
+        app_name = "mr-newsletter"
+        system = platform.system()
+
+        if system == "Windows":
+            base = Path.home() / "AppData" / "Local"
+        elif system == "Darwin":  # macOS
+            base = Path.home() / "Library" / "Application Support"
+        else:  # Linux and others
+            base = Path.home() / ".local" / "share"
+
+        data_dir = base / app_name
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir
+
+    @property
+    def sqlite_database_path(self) -> Path:
+        """Get full path to SQLite database file."""
+        return self.user_data_dir / self.sqlite_db_name
+
+    @property
+    def database_url(self) -> str:
+        """Get appropriate database URL based on mode.
+
+        Desktop mode: SQLite with aiosqlite driver
+        Web mode: PostgreSQL with asyncpg driver
+        """
+        if self.is_desktop_mode:
+            return f"sqlite+aiosqlite:///{self.sqlite_database_path}"
+        return self.postgres_database_url
+
+    @property
     def sync_database_url(self) -> str:
         """Get synchronous database URL for Alembic migrations."""
-        return self.database_url.replace("+asyncpg", "")
+        if self.is_desktop_mode:
+            return f"sqlite:///{self.sqlite_database_path}"
+        return self.postgres_database_url.replace("+asyncpg", "")
 
     @property
     def is_oauth_configured(self) -> bool:

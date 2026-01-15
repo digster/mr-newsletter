@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -34,7 +34,9 @@ class Newsletter(Base, TimestampMixin):
     gmail_label_name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Auto-fetch settings
-    auto_fetch_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    auto_fetch_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("1"), nullable=False
+    )
     fetch_interval_minutes: Mapped[int] = mapped_column(
         Integer,
         default=1440,  # 24 hours
@@ -63,7 +65,9 @@ class Newsletter(Base, TimestampMixin):
     )  # Icon name
 
     # Status
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("1"), nullable=False
+    )
 
     # Relationships
     emails: Mapped[list["Email"]] = relationship(

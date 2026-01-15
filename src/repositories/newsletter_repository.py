@@ -44,7 +44,7 @@ class NewsletterRepository(BaseRepository[Newsletter]):
         """
         result = await self.session.execute(
             select(Newsletter)
-            .where(Newsletter.is_active == True)  # noqa: E712
+            .where(Newsletter.is_active.is_(True))
             .order_by(Newsletter.name)
         )
         return result.scalars().all()
@@ -73,8 +73,8 @@ class NewsletterRepository(BaseRepository[Newsletter]):
         """
         result = await self.session.execute(
             select(Newsletter)
-            .where(Newsletter.is_active == True)  # noqa: E712
-            .where(Newsletter.auto_fetch_enabled == True)  # noqa: E712
+            .where(Newsletter.is_active.is_(True))
+            .where(Newsletter.auto_fetch_enabled.is_(True))
         )
         return result.scalars().all()
 

@@ -34,7 +34,6 @@ class BaseRepository(Generic[T]):
         """
         self.session.add(entity)
         await self.session.flush()
-        await self.session.refresh(entity)
         return entity
 
     async def get_by_id(self, entity_id: int) -> Optional[T]:
@@ -66,10 +65,9 @@ class BaseRepository(Generic[T]):
         Returns:
             Updated entity.
         """
-        await self.session.merge(entity)
+        merged = await self.session.merge(entity)
         await self.session.flush()
-        await self.session.refresh(entity)
-        return entity
+        return merged
 
     async def delete(self, entity: T) -> None:
         """Delete an entity.

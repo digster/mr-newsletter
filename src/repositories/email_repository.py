@@ -71,17 +71,17 @@ class EmailRepository(BaseRepository[Email]):
         query = (
             select(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_archived == False)  # noqa: E712
+            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
             .order_by(desc(Email.received_at))
             .limit(limit)
             .offset(offset)
         )
 
         if unread_only:
-            query = query.where(Email.is_read == False)  # noqa: E712
+            query = query.where(Email.is_read== False)  # noqa: E712 Unread emails
 
         if starred_only:
-            query = query.where(Email.is_starred == True)  # noqa: E712
+            query = query.where(Email.is_starred.is_(True))
 
         result = await self.session.execute(query)
         return result.scalars().all()
@@ -99,8 +99,8 @@ class EmailRepository(BaseRepository[Email]):
             select(func.count())
             .select_from(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_read == False)  # noqa: E712
-            .where(Email.is_archived == False)  # noqa: E712
+            .where(Email.is_read== False)  # noqa: E712 Unread emails
+            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
         )
         return result.scalar() or 0
 
@@ -117,7 +117,7 @@ class EmailRepository(BaseRepository[Email]):
             select(func.count())
             .select_from(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_archived == False)  # noqa: E712
+            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
         )
         return result.scalar() or 0
 
@@ -134,8 +134,8 @@ class EmailRepository(BaseRepository[Email]):
             select(func.count())
             .select_from(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_starred == True)  # noqa: E712
-            .where(Email.is_archived == False)  # noqa: E712
+            .where(Email.is_starred.is_(True))
+            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
         )
         return result.scalar() or 0
 
@@ -240,7 +240,7 @@ class EmailRepository(BaseRepository[Email]):
         result = await self.session.execute(
             select(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_archived == False)  # noqa: E712
+            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
             .where(
                 (Email.subject.ilike(search_pattern))
                 | (Email.sender_email.ilike(search_pattern))

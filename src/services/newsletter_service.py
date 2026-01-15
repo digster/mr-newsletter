@@ -186,20 +186,40 @@ class NewsletterService:
         )
 
         new_count = 0
+        skipped_existing = 0
+        skipped_fetch_failed = 0
+
+        logger.info(f"Got {len(message_ids)} message IDs from Gmail for {newsletter.name}")
+
+        # PHASE 1: Collect Gmail messages (keeps sync Gmail calls separate from async DB ops)
+        emails_to_create = []
         for msg_id in message_ids:
-            # Skip if already exists
             if await self.email_repo.exists_by_gmail_id(msg_id):
+                skipped_existing += 1
                 continue
 
-            # Fetch full message
             gmail_msg = self.gmail_service.get_message_detail(msg_id)
             if not gmail_msg:
+                skipped_fetch_failed += 1
+                logger.warning(f"Failed to fetch message detail for {msg_id}")
                 continue
 
-            # Save to database
+            emails_to_create.append((msg_id, gmail_msg))
+
+        # PHASE 2: Insert all emails (pure async operations)
+        for msg_id, gmail_msg in emails_to_create:
             email = self._gmail_message_to_email(gmail_msg, newsletter_id)
-            await self.email_repo.create(email)
-            new_count += 1
+            try:
+                await self.email_repo.create(email)
+                new_count += 1
+            except Exception as e:
+                logger.error(f"Failed to save email {msg_id}: {e}")
+                skipped_fetch_failed += 1
+
+        logger.info(
+            f"Fetch summary for {newsletter.name}: {new_count} new, "
+            f"{skipped_existing} already existed, {skipped_fetch_failed} fetch failed"
+        )
 
         # Update newsletter tracking
         newsletter.last_fetched_at = datetime.now(timezone.utc)

@@ -1,8 +1,9 @@
-.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate check-env help
+.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate check-env setup-gcloud help
 
 help:
 	@echo "Available commands:"
 	@echo "  make install           - Install dependencies"
+	@echo "  make setup-gcloud      - Interactive Google Cloud setup wizard"
 	@echo "  make check-env         - Verify required environment variables"
 	@echo "  make run               - Run desktop app"
 	@echo "  make run-web           - Run web app"
@@ -26,6 +27,9 @@ check-env:
 	@if [ -z "$$GOOGLE_CLIENT_ID" ]; then echo "ERROR: GOOGLE_CLIENT_ID is not set"; exit 1; fi
 	@if [ -z "$$GOOGLE_CLIENT_SECRET" ]; then echo "ERROR: GOOGLE_CLIENT_SECRET is not set"; exit 1; fi
 	@echo "All required environment variables are set."
+
+setup-gcloud:
+	uv run python scripts/setup_gcloud.py
 
 run:
 	uv run python -m src.main

@@ -25,7 +25,29 @@ A desktop and web application for reading newsletters from your Gmail inbox. Bui
 
 ## Google Cloud Console Setup
 
-Before using the app, you need to create OAuth credentials in Google Cloud Console:
+Before using the app, you need to create OAuth credentials in Google Cloud Console.
+
+### Automated Setup (Recommended)
+
+Use the interactive setup wizard to automate most of the process:
+
+```bash
+make setup-gcloud
+```
+
+This script will:
+- Check for gcloud CLI installation
+- Create or select a GCP project
+- Enable the Gmail API automatically
+- Open browser to the correct pages for OAuth configuration
+- Guide you through each manual step
+- Save credentials to your `.env` file
+
+**Prerequisites**: [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install) must be installed.
+
+### Manual Setup
+
+If you prefer manual setup or don't have gcloud CLI, follow these steps:
 
 1. **Create a Google Cloud Project**
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -269,6 +291,7 @@ The project includes a Makefile for common tasks:
 ```bash
 make help              # Show all available commands
 make install           # Install dependencies
+make setup-gcloud      # Interactive Google Cloud setup wizard
 make check-env         # Verify required environment variables
 make run               # Run desktop app
 make run-web           # Run web app

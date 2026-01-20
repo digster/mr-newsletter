@@ -1,11 +1,12 @@
-.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate check-env setup-gcloud help
+.PHONY: install run run-web run-web-debug build test test-e2e test-e2e-ci test-e2e-trace playwright-install lint format typecheck migrate check-env setup-gcloud kill help
 
 help:
 	@echo "Available commands:"
 	@echo "  make install           - Install dependencies"
 	@echo "  make setup-gcloud      - Interactive Google Cloud setup wizard"
 	@echo "  make check-env         - Verify required environment variables"
-	@echo "  make run               - Run desktop app"
+	@echo "  make kill              - Kill any process using port 8550"
+	@echo "  make run               - Run desktop app (auto-kills existing process)"
 	@echo "  make run-web           - Run web app"
 	@echo "  make run-web-debug     - Run web app for debugging with Claude"
 	@echo "  make build             - Create standalone executable"
@@ -31,7 +32,11 @@ check-env:
 setup-gcloud:
 	uv run python scripts/setup_gcloud.py
 
-run:
+kill:
+	@echo "Killing any existing Flet processes on port 8550..."
+	@lsof -ti :8550 | xargs kill -9 2>/dev/null || echo "No process to kill"
+
+run: kill
 	uv run python -m src.main
 
 run-web:
@@ -45,7 +50,8 @@ build:
 		--hidden-import sqlalchemy \
 		--hidden-import asyncpg \
 		--hidden-import google.auth \
-		--hidden-import apscheduler
+		--hidden-import apscheduler \
+		-y
 
 test:
 	uv run pytest

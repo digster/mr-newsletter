@@ -51,6 +51,7 @@ build:
 		--hidden-import asyncpg \
 		--hidden-import google.auth \
 		--hidden-import apscheduler \
+		--hidden-import aiosqlite \
 		-y
 
 test:

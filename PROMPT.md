@@ -95,3 +95,42 @@ google_client_id: str = Field(
 - Encryption key derived from `ENCRYPTION_KEY` setting
 - Non-obvious filename `.appdata` (looks like generic app data)
 - File is gitignored (credentials never in repo)
+
+## Fix Desktop App Bundled Config Decryption Error
+
+**Date:** 2026-01-20
+
+**Issue:** Bundled desktop app fails to decrypt `.appdata` with `cryptography.fernet.InvalidToken` error.
+
+**Root Cause:** Key mismatch between build time and runtime:
+- **Build**: `generate_app_config.py` uses hardcoded key `"dev-encryption-key-change-in-production"`
+- **Runtime**: `decrypt_value()` from `encryption.py` uses `settings.encryption_key` which loads from `.env`
+- If `.env` has a different `ENCRYPTION_KEY`, decryption fails
+
+**Solution:** Modified `app_credentials.py` to use a local decryption function with the same hardcoded key used during build, bypassing the settings-based encryption used for user tokens.
+
+**Implementation:**
+```python
+# src/config/app_credentials.py
+
+# Added constant matching generate_app_config.py
+BUNDLED_APP_ENCRYPTION_KEY = "dev-encryption-key-change-in-production"
+
+# Added local decryption function
+def _decrypt_bundled_config(ciphertext: str) -> str:
+    """Decrypt bundled config using the fixed bundled app key."""
+    key_bytes = hashlib.sha256(BUNDLED_APP_ENCRYPTION_KEY.encode()).digest()
+    fernet_key = base64.urlsafe_b64encode(key_bytes)
+    fernet = Fernet(fernet_key)
+    return fernet.decrypt(ciphertext.encode()).decode()
+
+# Replaced decrypt_value() call with _decrypt_bundled_config()
+```
+
+**Separation of Concerns:**
+1. **Bundled app credentials (.appdata)**: Uses hardcoded key (obfuscation only, consistent across builds)
+2. **User tokens (database)**: Uses configurable `ENCRYPTION_KEY` from settings (actual encryption)
+
+**Impact:**
+- Web app: Not affected (never calls `_load_from_bundled_file()`)
+- Desktop app: Fixed - bundled config decryption now uses correct key

@@ -8,16 +8,45 @@ The .appdata file is generated at build time by scripts/generate_app_config.py
 and bundled into the .app by PyInstaller.
 """
 
+import base64
+import hashlib
 import json
 import logging
 import sys
 from pathlib import Path
 from typing import Optional
 
+from cryptography.fernet import Fernet
+
 from src.config.settings import get_settings
-from src.utils.encryption import decrypt_value
+
+# This key is used for bundled app config encryption/decryption.
+# It must match the key used in scripts/generate_app_config.py
+# Note: This provides obfuscation only, not security. The actual OAuth
+# flow provides the real security for user authentication.
+BUNDLED_APP_ENCRYPTION_KEY = "dev-encryption-key-change-in-production"
 
 logger = logging.getLogger(__name__)
+
+
+def _decrypt_bundled_config(ciphertext: str) -> str:
+    """Decrypt bundled config using the fixed bundled app key.
+
+    This uses a hardcoded key that matches the one used during build time
+    in scripts/generate_app_config.py. This ensures the bundled .appdata
+    file can always be decrypted regardless of the user's ENCRYPTION_KEY
+    environment variable.
+
+    Args:
+        ciphertext: The encrypted string from the .appdata file.
+
+    Returns:
+        The decrypted JSON string.
+    """
+    key_bytes = hashlib.sha256(BUNDLED_APP_ENCRYPTION_KEY.encode()).digest()
+    fernet_key = base64.urlsafe_b64encode(key_bytes)
+    fernet = Fernet(fernet_key)
+    return fernet.decrypt(ciphertext.encode()).decode()
 
 
 def _get_bundled_config_path() -> Path:
@@ -72,8 +101,8 @@ def _load_from_bundled_file() -> Optional[tuple[str, str]]:
         # Read encrypted data
         encrypted_data = config_path.read_text()
 
-        # Decrypt using the same mechanism as user tokens
-        decrypted_json = decrypt_value(encrypted_data)
+        # Decrypt using the fixed bundled app key (not settings.encryption_key)
+        decrypted_json = _decrypt_bundled_config(encrypted_data)
         config = json.loads(decrypted_json)
 
         client_id = config.get("client_id", "")

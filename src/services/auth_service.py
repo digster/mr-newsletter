@@ -234,7 +234,21 @@ class AuthService:
 
             return creds
         except Exception as e:
-            logger.error(f"Failed to load user credentials: {e}")
+            logger.error(
+                f"Failed to load user credentials ({type(e).__name__}): {e}",
+                exc_info=True
+            )
+            # If decryption fails, the stored credentials are unusable
+            # (likely encrypted with a different key). Clear them so user can re-auth.
+            if user_cred:
+                try:
+                    await self.session.delete(user_cred)
+                    await self.session.commit()
+                    logger.warning(
+                        "Cleared unusable credentials - user will need to re-authenticate"
+                    )
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to clear unusable credentials: {cleanup_error}")
             return None
 
     async def _save_user_credentials(

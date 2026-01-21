@@ -134,3 +134,58 @@ def _decrypt_bundled_config(ciphertext: str) -> str:
 **Impact:**
 - Web app: Not affected (never calls `_load_from_bundled_file()`)
 - Desktop app: Fixed - bundled config decryption now uses correct key
+
+## Fix Desktop App Reload Loop After User Credentials Load Failure
+
+**Date:** 2026-01-20
+
+**Issue:** After fixing bundled config decryption, the app enters a reload loop showing:
+```
+src.services.auth_service - ERROR - Failed to load user credentials:
+```
+with an empty error message (no details) and repeated "App session started" logs.
+
+**Root Cause:** User tokens in database were encrypted with a different `ENCRYPTION_KEY` than currently configured:
+1. User previously logged in and saved tokens encrypted with one key (from `.env`)
+2. Now loading with different/default encryption key → `InvalidToken` exception
+3. Exception's string representation is empty, making debugging impossible
+4. Auth service returns `None` for credentials → navigates to login → reload cycle continues
+
+The error handler at `auth_service.py:237` was missing `exc_info=True`, hiding the actual exception type.
+
+**Solution:** Two-part fix:
+1. **Better logging**: Added `exc_info=True` and exception type to error message
+2. **Graceful cleanup**: When credentials can't be decrypted, delete them from database so user can re-authenticate cleanly
+
+**Implementation:**
+```python
+# src/services/auth_service.py - _load_user_credentials()
+
+# BEFORE
+except Exception as e:
+    logger.error(f"Failed to load user credentials: {e}")
+    return None
+
+# AFTER
+except Exception as e:
+    logger.error(
+        f"Failed to load user credentials ({type(e).__name__}): {e}",
+        exc_info=True
+    )
+    # If decryption fails, the stored credentials are unusable
+    # (likely encrypted with a different key). Clear them so user can re-auth.
+    if user_cred:
+        try:
+            await self.session.delete(user_cred)
+            await self.session.commit()
+            logger.warning(
+                "Cleared unusable credentials - user will need to re-authenticate"
+            )
+        except Exception as cleanup_error:
+            logger.error(f"Failed to clear unusable credentials: {cleanup_error}")
+    return None
+```
+
+**Impact:**
+- Web app: Not affected (encryption key consistent via environment variables)
+- Desktop app: Fixed - corrupted credentials auto-cleaned, user sees login screen once (not repeatedly)

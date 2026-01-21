@@ -96,6 +96,35 @@ class EmailListPage(ft.View):
             on_navigate=self._handle_navigate,
         )
 
+        # Empty state elements (stored as instance vars for dynamic updates)
+        self.empty_state_heading = ft.Text(
+            "No emails yet",
+            size=Typography.H4_SIZE,
+            weight=ft.FontWeight.W_500,
+            color=Colors.Light.TEXT_SECONDARY,
+        )
+        self.empty_state_subheading = ft.Text(
+            "Fetch emails to get started",
+            size=Typography.BODY_SIZE,
+            color=Colors.Light.TEXT_TERTIARY,
+        )
+        self.empty_state_fetch_button = ft.ElevatedButton(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.REFRESH, size=18, color="#FFFFFF"),
+                    ft.Container(width=Spacing.XS),
+                    ft.Text("Fetch Now"),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            bgcolor=Colors.Light.ACCENT,
+            color="#FFFFFF",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+            ),
+            on_click=lambda e: self.app.page.run_task(self._on_refresh, e),
+        )
+
         self.empty_state = ft.Container(
             content=ft.Column(
                 [
@@ -105,35 +134,11 @@ class EmailListPage(ft.View):
                         color=Colors.Light.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.MD),
-                    ft.Text(
-                        "No emails yet",
-                        size=Typography.H4_SIZE,
-                        weight=ft.FontWeight.W_500,
-                        color=Colors.Light.TEXT_SECONDARY,
-                    ),
+                    self.empty_state_heading,
                     ft.Container(height=Spacing.XS),
-                    ft.Text(
-                        "Fetch emails to get started",
-                        size=Typography.BODY_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
-                    ),
+                    self.empty_state_subheading,
                     ft.Container(height=Spacing.LG),
-                    ft.ElevatedButton(
-                        content=ft.Row(
-                            [
-                                ft.Icon(ft.Icons.REFRESH, size=18, color="#FFFFFF"),
-                                ft.Container(width=Spacing.XS),
-                                ft.Text("Fetch Now"),
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER,
-                        ),
-                        bgcolor=Colors.Light.ACCENT,
-                        color="#FFFFFF",
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
-                        ),
-                        on_click=lambda e: self.app.page.run_task(self._on_refresh, e),
-                    ),
+                    self.empty_state_fetch_button,
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
@@ -288,6 +293,21 @@ class EmailListPage(ft.View):
         """Handle navigation from sidebar."""
         self.app.navigate(route)
 
+    def _update_empty_state_content(self) -> None:
+        """Update empty state content based on current filter."""
+        if self.current_filter == "starred":
+            self.empty_state_heading.value = "No starred emails"
+            self.empty_state_subheading.value = "Star emails to see them here"
+            self.empty_state_fetch_button.visible = False
+        elif self.current_filter == "unread":
+            self.empty_state_heading.value = "No unread emails"
+            self.empty_state_subheading.value = "All caught up!"
+            self.empty_state_fetch_button.visible = False
+        else:  # "all"
+            self.empty_state_heading.value = "No emails yet"
+            self.empty_state_subheading.value = "Fetch emails to get started"
+            self.empty_state_fetch_button.visible = True
+
     def _on_filter_change(self, filter_key: str) -> None:
         """Handle filter tab change."""
         self.current_filter = filter_key
@@ -305,6 +325,8 @@ class EmailListPage(ft.View):
             tab.bgcolor = Colors.Light.ACCENT_MUTED if is_active else None
             tab.on_hover = None if is_active else tab._on_hover
         self.filter_tabs.update()
+        # Update empty state content for new filter
+        self._update_empty_state_content()
         # Reload with filter
         self.app.page.run_task(self._load_data)
 
@@ -390,6 +412,7 @@ class EmailListPage(ft.View):
                     item = self._create_email_item(data)
                     self.emails_list.controls.append(item)
             else:
+                self._update_empty_state_content()
                 self.empty_state.visible = True
 
             # Update pagination controls

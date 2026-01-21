@@ -286,3 +286,26 @@ The bundled .app works correctly on first launch but fails on subsequent launche
 - `src/ui/pages/newsletters_page.py`
 - `src/services/auth_service.py`
 - `tests/unit/test_ui/test_pages/test_user_flows.py`
+
+## Fix Starred Tab Empty State
+
+**Date:** 2026-01-21
+
+**Issue:** The Starred tab shows "Fetch emails to get started" and a "Fetch Now" button when empty. This is incorrect because starred emails are a subset of already-fetched emails that users have manually starred - you cannot "fetch" starred emails.
+
+**Root Cause:** The empty state was static and displayed the same content ("No emails yet" / "Fetch emails to get started" / Fetch button) regardless of which filter tab was active.
+
+**Solution:** Made the empty state context-aware based on the current filter (`all`, `unread`, or `starred`):
+
+| Filter | Heading | Subheading | Fetch Button |
+|--------|---------|------------|--------------|
+| all | "No emails yet" | "Fetch emails to get started" | Visible |
+| unread | "No unread emails" | "All caught up!" | Hidden |
+| starred | "No starred emails" | "Star emails to see them here" | Hidden |
+
+**Implementation:**
+1. Extracted empty state text and button into instance variables (`empty_state_heading`, `empty_state_subheading`, `empty_state_fetch_button`)
+2. Added `_update_empty_state_content()` helper method that sets content based on `self.current_filter`
+3. Called helper in `_on_filter_change()` and in `_load_data()` before showing empty state
+
+**File Changed:** `src/ui/pages/email_list_page.py`

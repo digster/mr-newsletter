@@ -1,5 +1,6 @@
 """Gmail API service for fetching emails and labels."""
 
+import asyncio
 import base64
 import logging
 from dataclasses import dataclass
@@ -296,3 +297,72 @@ class GmailService:
         except HttpError as e:
             logger.error(f"Failed to get label info: {e}")
             return 0
+
+    # =========================================================================
+    # Async wrappers for Gmail API calls
+    # These prevent event loop starvation on macOS by running blocking I/O
+    # in a thread pool, allowing the main thread to process system events.
+    # =========================================================================
+
+    async def get_user_email_async(self) -> str:
+        """Async version of get_user_email.
+
+        Returns:
+            User's email address.
+        """
+        return await asyncio.to_thread(self.get_user_email)
+
+    async def get_labels_async(self, user_labels_only: bool = True) -> list[GmailLabel]:
+        """Async version of get_labels.
+
+        Args:
+            user_labels_only: If True, only return user-created labels.
+
+        Returns:
+            List of GmailLabel objects.
+        """
+        return await asyncio.to_thread(self.get_labels, user_labels_only)
+
+    async def get_messages_by_label_async(
+        self,
+        label_id: str,
+        max_results: int = 50,
+        page_token: Optional[str] = None,
+        after_date: Optional[datetime] = None,
+    ) -> tuple[list[str], Optional[str]]:
+        """Async version of get_messages_by_label.
+
+        Args:
+            label_id: Gmail label ID.
+            max_results: Maximum messages to fetch.
+            page_token: Token for pagination.
+            after_date: Only fetch messages after this date.
+
+        Returns:
+            Tuple of (message_ids, next_page_token).
+        """
+        return await asyncio.to_thread(
+            self.get_messages_by_label, label_id, max_results, page_token, after_date
+        )
+
+    async def get_message_detail_async(self, message_id: str) -> Optional[GmailMessage]:
+        """Async version of get_message_detail.
+
+        Args:
+            message_id: Gmail message ID.
+
+        Returns:
+            GmailMessage if successful, None otherwise.
+        """
+        return await asyncio.to_thread(self.get_message_detail, message_id)
+
+    async def get_message_count_for_label_async(self, label_id: str) -> int:
+        """Async version of get_message_count_for_label.
+
+        Args:
+            label_id: Gmail label ID.
+
+        Returns:
+            Total message count.
+        """
+        return await asyncio.to_thread(self.get_message_count_for_label, label_id)

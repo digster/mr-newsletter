@@ -163,7 +163,7 @@ class LoginPage(ft.View):
                     self.app.gmail_service = GmailService(auth_result.credentials)
 
                     # Get real email and update
-                    real_email = self.app.gmail_service.get_user_email()
+                    real_email = await self.app.gmail_service.get_user_email_async()
                     if real_email and auth_result.user_email != real_email:
                         await auth_service.update_user_email(
                             auth_result.user_email or "user@gmail.com",

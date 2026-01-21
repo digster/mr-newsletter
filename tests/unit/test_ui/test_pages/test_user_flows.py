@@ -253,7 +253,10 @@ class TestSignInFlow:
         with patch(
             "src.ui.pages.login_page.AuthService", return_value=mock_auth_service
         ), patch("src.ui.pages.login_page.GmailService") as mock_gmail_class:
-            mock_gmail_class.return_value = MagicMock()
+            # Create a mock GmailService with async method properly mocked
+            mock_gmail_instance = MagicMock()
+            mock_gmail_instance.get_user_email_async = AsyncMock(return_value="test@example.com")
+            mock_gmail_class.return_value = mock_gmail_instance
 
             page = LoginPage(app=mock_app)
             await page._on_sign_in(MagicMock())

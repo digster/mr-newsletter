@@ -340,7 +340,7 @@ class NewslettersPage(ft.View):
                 self.app.show_snackbar("Not authenticated", error=True)
                 return
 
-            labels = self.app.gmail_service.get_labels(user_labels_only=True)
+            labels = await self.app.gmail_service.get_labels_async(user_labels_only=True)
         except Exception as ex:
             self.app.show_snackbar(f"Error loading labels: {ex}", error=True)
             return

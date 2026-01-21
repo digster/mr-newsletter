@@ -1,5 +1,6 @@
 """Newsletter service for business logic."""
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Sequence
@@ -164,6 +165,9 @@ class NewsletterService:
     ) -> int:
         """Fetch new emails for a newsletter from Gmail.
 
+        Uses async Gmail API wrappers to prevent event loop starvation
+        on macOS, which causes "Application Not Responding" dialogs.
+
         Args:
             newsletter_id: Newsletter ID.
             max_results: Maximum emails to fetch.
@@ -178,8 +182,8 @@ class NewsletterService:
         if not newsletter:
             raise ValueError(f"Newsletter {newsletter_id} not found")
 
-        # Get message IDs
-        message_ids, _ = self.gmail_service.get_messages_by_label(
+        # Get message IDs (async to prevent blocking)
+        message_ids, _ = await self.gmail_service.get_messages_by_label_async(
             label_id=newsletter.gmail_label_id,
             max_results=max_results,
             after_date=newsletter.last_fetched_at,
@@ -191,23 +195,24 @@ class NewsletterService:
 
         logger.info(f"Got {len(message_ids)} message IDs from Gmail for {newsletter.name}")
 
-        # PHASE 1: Collect Gmail messages (keeps sync Gmail calls separate from async DB ops)
-        emails_to_create = []
-        for msg_id in message_ids:
+        # Process messages with periodic yielding to keep event loop responsive
+        for i, msg_id in enumerate(message_ids):
+            # Yield to event loop periodically to prevent macOS ANR
+            if i > 0 and i % 5 == 0:
+                await asyncio.sleep(0)
+
             if await self.email_repo.exists_by_gmail_id(msg_id):
                 skipped_existing += 1
                 continue
 
-            gmail_msg = self.gmail_service.get_message_detail(msg_id)
+            # Fetch message detail (async to prevent blocking)
+            gmail_msg = await self.gmail_service.get_message_detail_async(msg_id)
             if not gmail_msg:
                 skipped_fetch_failed += 1
                 logger.warning(f"Failed to fetch message detail for {msg_id}")
                 continue
 
-            emails_to_create.append((msg_id, gmail_msg))
-
-        # PHASE 2: Insert all emails (pure async operations)
-        for msg_id, gmail_msg in emails_to_create:
+            # Create and save email
             email = self._gmail_message_to_email(gmail_msg, newsletter_id)
             try:
                 await self.email_repo.create(email)

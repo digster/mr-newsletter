@@ -1,5 +1,6 @@
 """Authentication service for Gmail OAuth."""
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -95,7 +96,7 @@ class AuthService:
         # Try to refresh if expired
         if creds and creds.expired and creds.refresh_token:
             try:
-                creds.refresh(Request())
+                await asyncio.to_thread(creds.refresh, Request())
                 # Save refreshed token
                 await self._save_user_credentials(user_email or "", creds)
                 self._credentials = creds
@@ -145,8 +146,8 @@ class AuthService:
 
             flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
 
-            # Run local server for OAuth callback
-            creds = flow.run_local_server(port=port)
+            # Run local server for OAuth callback (in thread to avoid blocking event loop)
+            creds = await asyncio.to_thread(flow.run_local_server, port=port)
 
             # Get user email from credentials
             user_email = self._get_email_from_credentials(creds)

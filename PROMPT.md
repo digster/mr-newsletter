@@ -217,3 +217,72 @@ The bundled .app works correctly on first launch but fails on subsequent launche
 - `self.app.page.close(dialog)` → `dialog.open = False` + `self.app.page.update()` in both `confirm_sign_out` and `close_dialog` functions.
 
 **File Changed:** `src/ui/pages/settings_page.py`
+
+## Fix macOS "Application Not Responding" Issue
+
+**Date:** 2026-01-21
+
+**Issue:** The desktop app shows "Application Not Responding" in the macOS dock and the icon keeps jumping, even though the app works fine. This is caused by **event loop starvation** - synchronous blocking operations prevent macOS from receiving system event callbacks.
+
+**Root Causes:**
+1. **Synchronous Gmail API Calls (Primary):** All Gmail API calls use `.execute()` synchronously, blocking the main thread when called from async contexts.
+2. **Scheduler Initialized But Never Started (Secondary):** The `AsyncIOScheduler` is instantiated with event listeners attached but never started, creating an orphaned scheduler.
+
+**Solution:**
+
+1. **Added async wrapper methods to GmailService** (`src/services/gmail_service.py`):
+   - `get_user_email_async()`
+   - `get_labels_async()`
+   - `get_messages_by_label_async()`
+   - `get_message_detail_async()`
+   - `get_message_count_for_label_async()`
+
+   These use `asyncio.to_thread()` to offload blocking I/O to a thread pool.
+
+2. **Updated NewsletterService** (`src/services/newsletter_service.py`):
+   - Changed `fetch_newsletter_emails()` to use async Gmail methods
+   - Added periodic `await asyncio.sleep(0)` calls during email processing to yield control back to the event loop
+
+3. **Fixed Scheduler Service** (`src/app.py`):
+   - Added `scheduler_service.start()` call after initialization to properly start the scheduler instead of leaving it orphaned
+
+**Files Changed:**
+- `src/services/gmail_service.py`
+- `src/services/newsletter_service.py`
+- `src/app.py`
+
+## Fix macOS "Application Not Responding" Issue - Part 2
+
+**Date:** 2026-01-21
+
+**Issue:** Despite adding async wrappers in Part 1, the ANR issue persisted because **callers were still using synchronous methods** in several places.
+
+**Root Causes:**
+1. `login_page.py:166` called `get_user_email()` synchronously after OAuth
+2. `newsletters_page.py:343` called `get_labels()` synchronously when showing add dialog
+3. `auth_service.py:98` called `creds.refresh(Request())` synchronously during token refresh
+4. `auth_service.py:149` called `flow.run_local_server()` synchronously during OAuth flow
+
+**Solution:**
+
+1. **Updated LoginPage** (`src/ui/pages/login_page.py`):
+   - Changed `get_user_email()` to `await get_user_email_async()`
+
+2. **Updated NewslettersPage** (`src/ui/pages/newsletters_page.py`):
+   - Changed `get_labels()` to `await get_labels_async()`
+
+3. **Updated AuthService** (`src/services/auth_service.py`):
+   - Added `import asyncio` at top
+   - Wrapped `creds.refresh(Request())` with `asyncio.to_thread()`
+   - Wrapped `flow.run_local_server(port=port)` with `asyncio.to_thread()`
+
+4. **Updated test** (`tests/unit/test_ui/test_pages/test_user_flows.py`):
+   - Fixed mock in `test_sign_in_success_navigates_to_home` to use `AsyncMock` for `get_user_email_async()`
+
+**Key Learning:** When converting an app to async, it's not enough to add async wrappers - you must also update all callers to use the async versions. Synchronous calls anywhere in the async call chain will block the event loop.
+
+**Files Changed:**
+- `src/ui/pages/login_page.py`
+- `src/ui/pages/newsletters_page.py`
+- `src/services/auth_service.py`
+- `tests/unit/test_ui/test_pages/test_user_flows.py`

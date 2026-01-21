@@ -45,24 +45,18 @@ run-web:
 build:
 	@echo "Generating encrypted app config..."
 	uv run python scripts/generate_app_config.py
-	@echo "Building application with PyInstaller..."
-	uv run pyinstaller src/main.py \
+	@echo "Building application with flet pack..."
+	uv run flet pack src/main.py \
 		--name "Mr Newsletter" \
-		--onedir \
-		--windowed \
+		--bundle-id "com.mrnewsletter.app" \
 		--add-data "src/config:src/config" \
 		--add-data "src/ui:src/ui" \
-		--hidden-import flet \
 		--hidden-import sqlalchemy \
 		--hidden-import asyncpg \
 		--hidden-import google.auth \
 		--hidden-import apscheduler \
 		--hidden-import aiosqlite \
-		--hidden-import flet_runtime \
-		--collect-all flet \
-		--collect-all flet_runtime \
-		--noconfirm \
-		--clean
+		-y
 
 test:
 	uv run pytest

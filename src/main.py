@@ -1,6 +1,7 @@
 """Application entry point."""
 
 import asyncio
+import atexit
 import logging
 import sys
 
@@ -24,6 +25,22 @@ async def main(page: ft.Page) -> None:
         page: Flet page instance.
     """
     app = NewsletterApp(page)
+
+    # Register atexit cleanup for abnormal exits (e.g., force quit via Dock)
+    def cleanup_sync():
+        try:
+            # Try to run shutdown synchronously if possible
+            try:
+                loop = asyncio.get_running_loop()
+                # If loop is running, we can't do much here
+            except RuntimeError:
+                # No running loop, can create one
+                asyncio.run(app.shutdown())
+        except Exception:
+            pass  # Best effort cleanup
+
+    atexit.register(cleanup_sync)
+
     await app.initialize()
 
 

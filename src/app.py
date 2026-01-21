@@ -1,5 +1,6 @@
 """Main Flet application class."""
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -70,6 +71,9 @@ class NewsletterApp:
 
         # Check auth and navigate
         await self._check_auth_and_navigate()
+
+        # Register shutdown handler for clean exit
+        self.page.on_close = lambda e: asyncio.create_task(self.shutdown())
 
     async def _init_services(self) -> None:
         """Initialize application services."""

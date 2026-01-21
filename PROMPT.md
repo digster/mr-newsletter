@@ -189,3 +189,19 @@ except Exception as e:
 **Impact:**
 - Web app: Not affected (encryption key consistent via environment variables)
 - Desktop app: Fixed - corrupted credentials auto-cleaned, user sees login screen once (not repeatedly)
+
+---
+
+## Fix Desktop App Force Quit on Second Launch
+
+Implement the following plan:
+
+# Fix Desktop App Force Quit on Second Launch
+
+## Problem
+The bundled .app works correctly on first launch but fails on subsequent launches - app icon shows in Dock but enters force quit state.
+
+## Solution
+1. Register page.on_close handler in src/app.py
+2. Add atexit fallback in src/main.py
+

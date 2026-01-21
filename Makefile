@@ -43,16 +43,26 @@ run-web:
 	FLET_WEB_APP=true uv run python -m src.main
 
 build:
-	uv run flet pack src/main.py \
+	@echo "Generating encrypted app config..."
+	uv run python scripts/generate_app_config.py
+	@echo "Building application with PyInstaller..."
+	uv run pyinstaller src/main.py \
 		--name "Mr Newsletter" \
+		--onedir \
+		--windowed \
 		--add-data "src/config:src/config" \
 		--add-data "src/ui:src/ui" \
+		--hidden-import flet \
 		--hidden-import sqlalchemy \
 		--hidden-import asyncpg \
 		--hidden-import google.auth \
 		--hidden-import apscheduler \
 		--hidden-import aiosqlite \
-		-y
+		--hidden-import flet_runtime \
+		--collect-all flet \
+		--collect-all flet_runtime \
+		--noconfirm \
+		--clean
 
 test:
 	uv run pytest

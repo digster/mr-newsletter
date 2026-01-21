@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config.app_credentials import get_app_credentials, is_app_configured
 from src.config.settings import get_settings
 from src.models.user_credential import UserCredential
 from src.utils.encryption import decrypt_value, encrypt_value
@@ -50,26 +51,23 @@ class AuthService:
         self._credentials: Optional[Credentials] = None
 
     async def is_app_configured(self) -> bool:
-        """Check if app OAuth credentials are configured via environment variables.
+        """Check if app OAuth credentials are configured.
+
+        Checks for credentials from bundled encrypted file (desktop)
+        or environment variables (web/development).
 
         Returns:
             True if configured, False otherwise.
         """
-        settings = get_settings()
-        return settings.is_oauth_configured
+        return is_app_configured()
 
     def get_app_credentials(self) -> Optional[tuple[str, str]]:
-        """Get app credentials from environment variables.
+        """Get app credentials from bundled file or environment variables.
 
         Returns:
             Tuple of (client_id, client_secret) or None.
         """
-        settings = get_settings()
-
-        if not settings.is_oauth_configured:
-            return None
-
-        return settings.google_client_id, settings.google_client_secret
+        return get_app_credentials()
 
     async def get_user_credentials(
         self,

@@ -49,11 +49,13 @@ class Settings(BaseSettings):
         description="32-byte key for encrypting credentials in database",
     )
 
-    # Google OAuth - Required for Gmail API access
+    # Google OAuth - Optional with empty defaults (app shows config error page if missing)
     google_client_id: str = Field(
+        default="",
         description="Google OAuth Client ID from Google Cloud Console",
     )
     google_client_secret: str = Field(
+        default="",
         description="Google OAuth Client Secret from Google Cloud Console",
     )
 

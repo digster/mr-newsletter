@@ -269,7 +269,7 @@ class NewsletterApp:
                         alignment=ft.MainAxisAlignment.CENTER,
                     ),
                     expand=True,
-                    alignment=ft.alignment.center,
+                    alignment=ft.alignment.Alignment.CENTER,
                     padding=Spacing.XL,
                     bgcolor=Colors.Light.BG_PRIMARY,
                 )

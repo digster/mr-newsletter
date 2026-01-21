@@ -231,3 +231,6 @@ __marimo__/
 # E2E test artifacts
 tests/e2e/screenshots/*.png
 tests/e2e/traces/
+
+# Encrypted app credentials (generated at build time)
+src/config/.appdata

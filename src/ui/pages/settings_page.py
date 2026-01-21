@@ -290,14 +290,16 @@ class SettingsPage(ft.View):
                     await auth_service.logout()
 
                 self.app.gmail_service = None
-                self.app.page.close(dialog)
+                dialog.open = False
+                self.app.page.update()
                 self.app.show_snackbar("Signed out successfully")
                 self.app.navigate("/login")
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 
         def close_dialog(_):
-            self.app.page.close(dialog)
+            dialog.open = False
+            self.app.page.update()
 
         dialog = ConfirmDialog(
             title="Sign Out",

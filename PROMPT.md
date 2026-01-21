@@ -205,3 +205,15 @@ The bundled .app works correctly on first launch but fails on subsequent launche
 1. Register page.on_close handler in src/app.py
 2. Add atexit fallback in src/main.py
 
+## Fix Sign Out Not Working in Desktop App
+
+**Date:** 2026-01-21
+
+**Issue:** The sign out confirmation dialog appears, but clicking "Sign Out" does nothing in desktop mode.
+
+**Root Cause:** The settings page uses `page.close(dialog)` to close dialogs, while the working delete confirmation in newsletters page uses `dialog.open = False` + `page.update()`. In Flet desktop mode, `page.close()` may not properly release control back to the event loop, causing subsequent async operations to silently fail.
+
+**Solution:** Aligned the sign out handler with the working pattern from newsletters page by changing:
+- `self.app.page.close(dialog)` → `dialog.open = False` + `self.app.page.update()` in both `confirm_sign_out` and `close_dialog` functions.
+
+**File Changed:** `src/ui/pages/settings_page.py`

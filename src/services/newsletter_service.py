@@ -45,6 +45,7 @@ class NewsletterService:
         auto_fetch: bool = True,
         fetch_interval: int = 1440,
         color: Optional[str] = None,
+        color_secondary: Optional[str] = None,
     ) -> Newsletter:
         """Create a new newsletter.
 
@@ -56,6 +57,7 @@ class NewsletterService:
             auto_fetch: Enable auto-fetch.
             fetch_interval: Fetch interval in minutes.
             color: Optional hex color.
+            color_secondary: Optional secondary hex color for gradient.
 
         Returns:
             Created newsletter.
@@ -68,6 +70,7 @@ class NewsletterService:
             auto_fetch_enabled=auto_fetch,
             fetch_interval_minutes=fetch_interval,
             color=color,
+            color_secondary=color_secondary,
         )
         result = await self.newsletter_repo.create(newsletter)
         await self.session.commit()
@@ -112,6 +115,7 @@ class NewsletterService:
         auto_fetch: Optional[bool] = None,
         fetch_interval: Optional[int] = None,
         color: Optional[str] = None,
+        color_secondary: Optional[str] = None,
     ) -> Optional[Newsletter]:
         """Update newsletter settings.
 
@@ -122,6 +126,7 @@ class NewsletterService:
             auto_fetch: Enable/disable auto-fetch.
             fetch_interval: New fetch interval.
             color: New color.
+            color_secondary: New secondary color for gradient.
 
         Returns:
             Updated newsletter if found.
@@ -140,6 +145,8 @@ class NewsletterService:
             newsletter.fetch_interval_minutes = fetch_interval
         if color is not None:
             newsletter.color = color
+        if color_secondary is not None:
+            newsletter.color_secondary = color_secondary
 
         result = await self.newsletter_repo.update(newsletter)
         await self.session.commit()

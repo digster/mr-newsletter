@@ -85,13 +85,14 @@ class NavItem(ft.Container):
 
 
 class NewsletterNavItem(ft.Container):
-    """Newsletter navigation item with color dot and unread count."""
+    """Newsletter navigation item with colored background."""
 
     def __init__(
         self,
         newsletter_id: int,
         name: str,
         color: str,
+        color_secondary: Optional[str] = None,
         unread_count: int = 0,
         is_active: bool = False,
         on_click: Optional[Callable] = None,
@@ -99,40 +100,49 @@ class NewsletterNavItem(ft.Container):
         self.newsletter_id = newsletter_id
         self.is_active = is_active
         self._on_click = on_click
+        self._color = color
+        self._color_secondary = color_secondary
+
+        # Determine background (gradient or solid)
+        if color_secondary:
+            bg_gradient = ft.LinearGradient(
+                begin=ft.Alignment(-1, -1),  # top-left
+                end=ft.Alignment(1, 1),      # bottom-right
+                colors=[color, color_secondary],
+            )
+            bg_color = None
+        else:
+            bg_gradient = None
+            bg_color = color
+
+        # Store for hover state management
+        self._bg_gradient = bg_gradient
+        self._bg_color = bg_color
 
         super().__init__(
             content=ft.Row(
                 [
-                    # Color dot
-                    ft.Container(
-                        width=8,
-                        height=8,
-                        border_radius=BorderRadius.FULL,
-                        bgcolor=color,
-                    ),
-                    ft.Container(width=Spacing.SM),
-                    # Name
+                    # Name (white text for contrast on colored bg)
                     ft.Text(
                         name,
                         size=Typography.BODY_SMALL_SIZE,
-                        weight=ft.FontWeight.W_500
-                        if is_active
-                        else ft.FontWeight.W_400,
-                        color=Colors.Light.TEXT_PRIMARY
-                        if is_active
-                        else Colors.Light.TEXT_SECONDARY,
+                        weight=ft.FontWeight.W_500,
+                        color="#FFFFFF",
                         max_lines=1,
                         overflow=ft.TextOverflow.ELLIPSIS,
                         expand=True,
                     ),
-                    # Unread count
-                    ft.Text(
-                        str(unread_count),
-                        size=Typography.CAPTION_SIZE,
-                        color=Colors.Light.ACCENT
-                        if unread_count > 0
-                        else Colors.Light.TEXT_TERTIARY,
-                        weight=ft.FontWeight.W_500 if unread_count > 0 else None,
+                    # Unread count (white text)
+                    ft.Container(
+                        content=ft.Text(
+                            str(unread_count),
+                            size=Typography.CAPTION_SIZE,
+                            color="#FFFFFF",
+                            weight=ft.FontWeight.W_600,
+                        ),
+                        bgcolor="rgba(255, 255, 255, 0.25)",
+                        border_radius=BorderRadius.FULL,
+                        padding=ft.padding.symmetric(horizontal=6, vertical=2),
                     )
                     if unread_count > 0
                     else ft.Container(),
@@ -140,7 +150,9 @@ class NewsletterNavItem(ft.Container):
             ),
             padding=ft.padding.symmetric(horizontal=Spacing.SM, vertical=6),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_TERTIARY if is_active else None,
+            bgcolor=bg_color,
+            gradient=bg_gradient,
+            border=ft.border.all(2, "#FFFFFF") if is_active else None,
             on_click=self._handle_click,
             on_hover=self._on_hover,
         )
@@ -151,7 +163,11 @@ class NewsletterNavItem(ft.Container):
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
         if not self.is_active:
-            self.bgcolor = Colors.Light.HOVER if e.data == "true" else None
+            if e.data == "true":
+                # Add subtle border on hover
+                self.border = ft.border.all(1, "rgba(255, 255, 255, 0.5)")
+            else:
+                self.border = None
             self.update()
 
 
@@ -260,6 +276,7 @@ class Sidebar(ft.Container):
                     newsletter_id=nl.id,
                     name=nl.name,
                     color=nl.color or Colors.Light.ACCENT,
+                    color_secondary=nl.color_secondary,
                     unread_count=nl.unread_count,
                     is_active=is_active,
                     on_click=self.on_navigate,

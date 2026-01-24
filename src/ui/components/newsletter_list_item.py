@@ -5,6 +5,7 @@ from typing import Callable, Optional
 
 import flet as ft
 
+from src.ui.components.gradient_dot import create_gradient_dot
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 from src.ui.utils import format_relative_time
 
@@ -20,6 +21,7 @@ class NewsletterListItem(ft.Container):
         total_count: int,
         last_email_received_at: Optional[datetime] = None,
         color: Optional[str] = None,
+        color_secondary: Optional[str] = None,
         on_click: Optional[Callable] = None,
         on_refresh: Optional[Callable] = None,
     ):
@@ -29,6 +31,7 @@ class NewsletterListItem(ft.Container):
         self.total_count = total_count
         self.last_email_received_at = last_email_received_at
         self.accent_color = color or Colors.Light.ACCENT
+        self.accent_color_secondary = color_secondary
         self._on_click = on_click
         self._on_refresh = on_refresh
 
@@ -80,12 +83,11 @@ class NewsletterListItem(ft.Container):
 
         return ft.Row(
             [
-                # Color dot
-                ft.Container(
-                    width=8,
-                    height=8,
-                    border_radius=BorderRadius.FULL,
-                    bgcolor=self.accent_color,
+                # Color dot (with gradient support)
+                create_gradient_dot(
+                    self.accent_color,
+                    self.accent_color_secondary,
+                    size=8,
                 ),
                 ft.Container(width=Spacing.SM),
                 # Name and label

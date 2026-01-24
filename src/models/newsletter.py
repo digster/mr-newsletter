@@ -59,6 +59,10 @@ class Newsletter(Base, TimestampMixin):
         String(7),
         nullable=True,
     )  # Hex color like #FF5733
+    color_secondary: Mapped[Optional[str]] = mapped_column(
+        String(7),
+        nullable=True,
+    )  # Secondary hex color for gradient
     icon: Mapped[Optional[str]] = mapped_column(
         String(50),
         nullable=True,

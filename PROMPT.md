@@ -309,3 +309,98 @@ The bundled .app works correctly on first launch but fails on subsequent launche
 3. Called helper in `_on_filter_change()` and in `_load_data()` before showing empty state
 
 **File Changed:** `src/ui/pages/email_list_page.py`
+
+## Add Gradient Colors to Newsletters
+
+**Date:** 2026-01-24
+
+**Feature:** Add the ability to assign two colors to newsletters that display as a gradient on newsletter tabs (home page list items and sidebar navigation).
+
+**Implementation:**
+
+1. **Data Model** (`src/models/newsletter.py`):
+   - Added `color_secondary` field (nullable String(7)) for the secondary gradient color
+
+2. **Database Migration**:
+   - Created migration `20260124_144207_31fb1e510aca_add_color_secondary_for_gradients.py`
+   - Adds `color_secondary` column to `newsletters` table
+
+3. **Service Layer** (`src/services/newsletter_service.py`):
+   - Added `color_secondary` parameter to `create_newsletter()` method
+   - Added `color_secondary` parameter to `update_newsletter()` method
+
+4. **New Component: Gradient Dot** (`src/ui/components/gradient_dot.py`):
+   - Reusable function `create_gradient_dot(color, color_secondary, size)`
+   - Returns solid color container if no secondary color
+   - Returns gradient container (using `ft.LinearGradient`) if both colors provided
+   - Uses `ft.Alignment(-1, -1)` to `ft.Alignment(1, 1)` for diagonal gradient
+
+5. **New Component: Gradient Color Picker** (`src/ui/components/gradient_color_picker.py`):
+   - Two color input sections (primary + secondary) with hex validation
+   - 8 preset gradient combinations for quick selection
+   - Live gradient preview that updates as user types
+   - "Clear secondary" button to switch back to solid color
+
+6. **Updated Dialogs** (`src/ui/components/dialogs.py`):
+   - `AddNewsletterDialog`: Added gradient color picker section, `get_values()` returns colors
+   - `EditNewsletterDialog`: Added gradient color picker initialized with existing colors
+
+7. **Updated Display Components**:
+   - `NewsletterListItem` (`src/ui/components/newsletter_list_item.py`): Uses `create_gradient_dot()`
+   - `NewsletterNavItem` (`src/ui/components/sidebar.py`): Uses `create_gradient_dot()`
+   - Local `NewsletterListItem` (`src/ui/pages/newsletters_page.py`): Uses `create_gradient_dot()`
+
+8. **Updated Page Integration**:
+   - `HomePage` (`src/ui/pages/home_page.py`): Passes `color_secondary` to list items
+   - `NewslettersPage` (`src/ui/pages/newsletters_page.py`): Passes colors to service methods
+
+**Backwards Compatibility:**
+- Existing newsletters with only `color` display as solid (no gradient)
+- Migration adds nullable column - no data loss
+- UI gracefully handles `color_secondary=None`
+
+**Key Technical Note:**
+- Flet's `Alignment` class uses x,y coordinates: `(-1,-1)` = top-left, `(1,1)` = bottom-right
+- This differs from Flutter's named constants - in Flet Python you construct `Alignment(-1, -1)`
+
+**Files Changed:**
+- `src/models/newsletter.py`
+- `src/services/newsletter_service.py`
+- `src/ui/components/dialogs.py`
+- `src/ui/components/newsletter_list_item.py`
+- `src/ui/components/sidebar.py`
+- `src/ui/pages/home_page.py`
+- `src/ui/pages/newsletters_page.py`
+
+**Files Created:**
+- `src/ui/components/gradient_dot.py`
+- `src/ui/components/gradient_color_picker.py`
+- `migrations/versions/20260124_144207_31fb1e510aca_add_color_secondary_for_gradients.py`
+
+## Sidebar Newsletter Items Background Color
+
+**Date:** 2026-01-24
+
+**Feature:** Changed sidebar newsletter items to display the newsletter's color as the item's full background instead of showing a small color dot.
+
+**Previous Behavior:**
+- Small 8px color dot indicator
+- Plain background (`BG_TERTIARY` when active)
+
+**New Behavior:**
+- Entire item background is the newsletter's color (solid or gradient)
+- White text for contrast
+- Unread count shown in semi-transparent white badge
+- Active state: white border
+- Hover state: subtle white border
+
+**Implementation:**
+- Removed `create_gradient_dot()` usage and import
+- Set container's `bgcolor` for solid colors
+- Set container's `gradient` for gradients (when `color_secondary` exists)
+- Used white text (`#FFFFFF`) for name and unread count
+- Unread badge uses `rgba(255, 255, 255, 0.25)` background
+- Active items have a 2px white border
+- Hover adds a subtle 1px semi-transparent white border
+
+**File Changed:** `src/ui/components/sidebar.py`

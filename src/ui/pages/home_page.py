@@ -230,6 +230,7 @@ class HomePage(ft.View):
             total_count=newsletter.total_count,
             last_email_received_at=newsletter.last_email_received_at,
             color=newsletter.color,
+            color_secondary=newsletter.color_secondary,
             on_click=lambda _, nid=newsletter.id: self.app.navigate(
                 f"/newsletter/{nid}"
             ),

@@ -7,6 +7,7 @@ import flet as ft
 from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import AddNewsletterDialog, ConfirmDialog, EditNewsletterDialog, Sidebar
+from src.ui.components.gradient_dot import create_gradient_dot
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
@@ -43,12 +44,11 @@ class NewsletterListItem(ft.Container):
         super().__init__(
             content=ft.Row(
                 [
-                    # Color dot
-                    ft.Container(
-                        width=10,
-                        height=10,
-                        border_radius=BorderRadius.FULL,
-                        bgcolor=newsletter.color or Colors.Light.ACCENT,
+                    # Color dot (with gradient support)
+                    create_gradient_dot(
+                        newsletter.color or Colors.Light.ACCENT,
+                        newsletter.color_secondary,
+                        size=10,
                     ),
                     ft.Container(width=Spacing.SM),
                     # Info
@@ -378,6 +378,8 @@ class NewslettersPage(ft.View):
                         gmail_label_name=label_name,
                         auto_fetch=values["auto_fetch"],
                         fetch_interval=values["interval"],
+                        color=values.get("color"),
+                        color_secondary=values.get("color_secondary"),
                     )
 
                 # Queue initial email fetch
@@ -424,6 +426,8 @@ class NewslettersPage(ft.View):
                         name=name,
                         auto_fetch=values["auto_fetch"],
                         fetch_interval=values["interval"],
+                        color=values.get("color"),
+                        color_secondary=values.get("color_secondary"),
                     )
 
                 dialog.open = False

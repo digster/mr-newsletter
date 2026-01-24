@@ -4,6 +4,7 @@ from typing import Callable, List, Optional
 
 import flet as ft
 
+from src.ui.components.gradient_color_picker import GradientColorPicker
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 
@@ -115,6 +116,8 @@ class AddNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
         )
 
+        self.color_picker = GradientColorPicker()
+
         super().__init__(
             title=ft.Text(
                 "Add Newsletter",
@@ -141,8 +144,13 @@ class AddNewsletterDialog(ft.AlertDialog):
                         self.auto_fetch_switch,
                         ft.Container(height=Spacing.SM),
                         self.interval_field,
+                        ft.Container(height=Spacing.MD),
+                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Container(height=Spacing.MD),
+                        self.color_picker,
                     ],
                     tight=True,
+                    scroll=ft.ScrollMode.AUTO,
                 ),
                 width=400,
                 padding=ft.padding.only(top=Spacing.SM),
@@ -178,11 +186,14 @@ class AddNewsletterDialog(ft.AlertDialog):
 
     def get_values(self) -> dict:
         """Get dialog field values."""
+        color, color_secondary = self.color_picker.get_colors()
         return {
             "name": self.name_field.value,
             "label_id": self.label_dropdown.value,
             "auto_fetch": self.auto_fetch_switch.value,
             "interval": int(self.interval_field.value or "1440"),
+            "color": color,
+            "color_secondary": color_secondary,
         }
 
 
@@ -222,6 +233,11 @@ class EditNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+        )
+
+        self.color_picker = GradientColorPicker(
+            initial_color=newsletter.color,
+            initial_color_secondary=newsletter.color_secondary,
         )
 
         super().__init__(
@@ -270,8 +286,13 @@ class EditNewsletterDialog(ft.AlertDialog):
                         self.auto_fetch_switch,
                         ft.Container(height=Spacing.SM),
                         self.interval_field,
+                        ft.Container(height=Spacing.MD),
+                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Container(height=Spacing.MD),
+                        self.color_picker,
                     ],
                     tight=True,
+                    scroll=ft.ScrollMode.AUTO,
                 ),
                 width=400,
                 padding=ft.padding.only(top=Spacing.SM),
@@ -307,8 +328,11 @@ class EditNewsletterDialog(ft.AlertDialog):
 
     def get_values(self) -> dict:
         """Get dialog field values."""
+        color, color_secondary = self.color_picker.get_colors()
         return {
             "name": self.name_field.value,
             "auto_fetch": self.auto_fetch_switch.value,
             "interval": int(self.interval_field.value or "1440"),
+            "color": color,
+            "color_secondary": color_secondary,
         }

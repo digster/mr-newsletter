@@ -2,6 +2,7 @@
 
 import colorsys
 import re
+import time
 from typing import Callable, Optional, Tuple
 
 import flet as ft
@@ -97,6 +98,10 @@ class HSVColorPicker(ft.Column):
         self._on_change = on_change
         self._hue, self._sat, self._val = _hex_to_hsv(initial_color)
 
+        # Throttle state for slider updates (limits to ~20fps during dragging)
+        self._last_update_time: float = 0
+        self._throttle_ms: int = 50
+
         # Build components
         self._color_indicator = self._build_color_indicator()
         self._hue_slider = self._build_hue_slider()
@@ -147,6 +152,7 @@ class HSVColorPicker(ft.Column):
             inactive_color=Colors.Light.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_hue_change,
+            on_change_end=self._on_hue_change_end,
         )
 
     def _build_sat_slider(self) -> ft.Slider:
@@ -160,6 +166,7 @@ class HSVColorPicker(ft.Column):
             inactive_color=Colors.Light.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_sat_change,
+            on_change_end=self._on_sat_change_end,
         )
 
     def _build_val_slider(self) -> ft.Slider:
@@ -173,6 +180,7 @@ class HSVColorPicker(ft.Column):
             inactive_color=Colors.Light.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_val_change,
+            on_change_end=self._on_val_change_end,
         )
 
     def _build_labeled_slider(self, label: str, slider: ft.Slider) -> ft.Column:
@@ -210,22 +218,47 @@ class HSVColorPicker(ft.Column):
         )
 
     def _on_hue_change(self, e: ft.ControlEvent) -> None:
-        """Handle hue slider change."""
+        """Handle hue slider change with throttling."""
         self._hue = e.control.value
-        self._update_slider_colors()
-        self._update_display()
-        self._notify_change()
+        self._throttled_update()
+
+    def _on_hue_change_end(self, e: ft.ControlEvent) -> None:
+        """Handle hue slider change end - ensure final update."""
+        self._hue = e.control.value
+        self._force_update()
 
     def _on_sat_change(self, e: ft.ControlEvent) -> None:
-        """Handle saturation slider change."""
+        """Handle saturation slider change with throttling."""
         self._sat = e.control.value / 100
-        self._update_slider_colors()
-        self._update_display()
-        self._notify_change()
+        self._throttled_update()
+
+    def _on_sat_change_end(self, e: ft.ControlEvent) -> None:
+        """Handle saturation slider change end - ensure final update."""
+        self._sat = e.control.value / 100
+        self._force_update()
 
     def _on_val_change(self, e: ft.ControlEvent) -> None:
-        """Handle value/brightness slider change."""
+        """Handle value/brightness slider change with throttling."""
         self._val = e.control.value / 100
+        self._throttled_update()
+
+    def _on_val_change_end(self, e: ft.ControlEvent) -> None:
+        """Handle value/brightness slider change end - ensure final update."""
+        self._val = e.control.value / 100
+        self._force_update()
+
+    def _throttled_update(self) -> None:
+        """Update visuals with throttling to prevent UI lag."""
+        current_time = time.time() * 1000
+        if current_time - self._last_update_time >= self._throttle_ms:
+            self._last_update_time = current_time
+            self._update_slider_colors()
+            self._update_display()
+            self._notify_change()
+
+    def _force_update(self) -> None:
+        """Force immediate update without throttling (for final values)."""
+        self._last_update_time = time.time() * 1000
         self._update_slider_colors()
         self._update_display()
         self._notify_change()

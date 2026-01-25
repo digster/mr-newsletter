@@ -10,6 +10,7 @@ from src.services.email_service import EmailService
 from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import EmailListItem, Sidebar
+from src.ui.components.dialogs import EditNewsletterDialog
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography
 
 if TYPE_CHECKING:
@@ -236,6 +237,18 @@ class EmailListPage(ft.View):
                                         ),
                                         ft.Container(width=Spacing.XS),
                                         self.title_text,
+                                        ft.IconButton(
+                                            icon=ft.Icons.EDIT_OUTLINED,
+                                            icon_color=Colors.Light.TEXT_TERTIARY,
+                                            icon_size=18,
+                                            tooltip="Edit newsletter",
+                                            style=ft.ButtonStyle(
+                                                shape=ft.RoundedRectangleBorder(
+                                                    radius=BorderRadius.SM
+                                                ),
+                                            ),
+                                            on_click=lambda _: self._show_edit_dialog(),
+                                        ),
                                         ft.Container(expand=True),
                                         self.loading,
                                         ft.Container(width=Spacing.SM),
@@ -463,6 +476,55 @@ class EmailListPage(ft.View):
             await self._load_data()
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
+
+    def _show_edit_dialog(self) -> None:
+        """Show dialog to edit the current newsletter."""
+
+        async def save_changes(e) -> None:
+            try:
+                values = dialog.get_values()
+                name = (values["name"] or "").strip()
+
+                if not name:
+                    self.app.show_snackbar("Name is required", error=True)
+                    return
+
+                async with self.app.get_session() as session:
+                    service = NewsletterService(session=session)
+                    await service.update_newsletter(
+                        newsletter_id=self.newsletter.id,
+                        name=name,
+                        auto_fetch=values["auto_fetch"],
+                        fetch_interval=values["interval"],
+                        color=values.get("color"),
+                        color_secondary=values.get("color_secondary"),
+                    )
+
+                dialog.open = False
+                self.app.page.update()
+                self.app.show_snackbar("Newsletter updated")
+
+                # Update title and sidebar
+                self.title_text.value = name
+                self.newsletter.name = name
+                self.newsletter.color = values.get("color")
+                self.newsletter.color_secondary = values.get("color_secondary")
+                self.app.sidebar.load_newsletters()
+                self.app.page.update()
+            except Exception as ex:
+                self.app.show_snackbar(f"Error: {ex}", error=True)
+
+        def close_dialog(_):
+            dialog.open = False
+            self.app.page.update()
+
+        dialog = EditNewsletterDialog(
+            newsletter=self.newsletter,
+            on_save=lambda e: self.app.page.run_task(save_changes, e),
+            on_cancel=close_dialog,
+        )
+
+        self.app.page.show_dialog(dialog)
 
     def _update_pagination_controls(self) -> None:
         """Update pagination controls based on current state."""

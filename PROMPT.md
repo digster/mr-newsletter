@@ -701,3 +701,50 @@ This approach uses native Flet `Slider` components which don't have the Stack re
 - Slider thumb/active colors update to match current HSV values for visual feedback
 
 **File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Add Edit Button to Newsletter Listing Page
+
+Implement an edit button near the newsletter name on the email listing page header, allowing users to quickly edit newsletter settings without navigating to the manage page.
+
+Implementation:
+1. Added import for EditNewsletterDialog in email_list_page.py
+2. Added edit icon button in header between title and expand container
+3. Added _show_edit_dialog method with save/cancel handlers
+
+## Fix Hue Slider Performance in Color Picker
+
+**Date:** 2026-01-25
+
+**Issue:** The hue slider in the color picker feels laggy/stuttery on the email listing page, with delayed and incorrect color updates. The manage newsletters page works fine.
+
+**Root Cause:** The `HSVColorPicker` component in `gradient_color_picker.py` fires updates on every `on_change` event during slider dragging. Each update:
+1. Updates internal state (`self._hue`, `self._sat`, `self._val`)
+2. Calls `_update_slider_colors()` - modifies 3 sliders' `active_color` and `thumb_color` (6 property changes)
+3. Calls `_update_display()` - updates indicator bgcolor, hex display bgcolor/value/color, then calls `self.update()`
+4. Calls `_notify_change()` - notifies parent component
+
+This cascade of updates on every slider tick overwhelms the rendering, especially on pages with complex UI like the email list page (with sidebar, ListView, pagination).
+
+**Solution:** Add time-based throttling to limit update frequency while maintaining smooth visual feedback:
+
+1. **Added throttle state** in `HSVColorPicker.__init__`:
+   - `self._last_update_time: float = 0`
+   - `self._throttle_ms: int = 50` (limits to ~20fps during dragging)
+
+2. **Added `on_change_end` handlers** to all three sliders:
+   - `_on_hue_change_end()`, `_on_sat_change_end()`, `_on_val_change_end()`
+   - These guarantee the final value is always applied when slider is released
+
+3. **Modified change handlers** to use throttling:
+   - `_on_hue_change()`, `_on_sat_change()`, `_on_val_change()` now call `_throttled_update()`
+   - Internal state is always updated immediately
+   - Visual updates only fire if 50ms has elapsed
+
+4. **Added helper methods**:
+   - `_throttled_update()`: Checks time elapsed, updates only if >= 50ms since last update
+   - `_force_update()`: Bypasses throttle, used by `on_change_end` handlers for final values
+
+**Key Technical Insight:** The throttle uses `time.time() * 1000` for millisecond precision. The `on_change_end` event is critical - it fires when the user releases the slider, ensuring the final selected value is always applied even if throttled updates were skipped during dragging.
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+

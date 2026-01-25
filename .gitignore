@@ -232,5 +232,8 @@ __marimo__/
 tests/e2e/screenshots/*.png
 tests/e2e/traces/
 
+# Playwright MCP extension
+.playwright-mcp/
+
 # Encrypted app credentials (generated at build time)
 src/config/.appdata

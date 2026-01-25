@@ -46,7 +46,7 @@ class SortDropdown(ft.Container):
             ),
             width=160,
         )
-        self.dropdown.on_change = self._handle_change
+        self.dropdown.on_select = self._handle_change
 
         super().__init__(
             content=ft.Row(
@@ -68,7 +68,8 @@ class SortDropdown(ft.Container):
 
     def _handle_change(self, e: ft.ControlEvent) -> None:
         """Handle dropdown selection change."""
-        self._current_sort = e.control.value
+        # Use e.data which contains the selected option key in on_select events
+        self._current_sort = e.data or e.control.value
         if self._on_change_callback:
             self._on_change_callback(self._current_sort)
 

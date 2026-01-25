@@ -59,8 +59,7 @@ class SettingsPage(ft.View):
                 color=self.colors.TEXT_SECONDARY,
             ),
         )
-        # Set on_change after creation (required for newer Flet versions)
-        self.theme_dropdown.on_change = self._on_theme_change
+        self.theme_dropdown.on_select = self._on_theme_change
 
         self.sidebar = Sidebar(
             current_route="/settings",
@@ -292,7 +291,8 @@ class SettingsPage(ft.View):
 
     def _on_theme_change(self, e: ft.ControlEvent) -> None:
         """Handle theme change."""
-        theme_value = self.theme_dropdown.value
+        # Use e.data which contains the selected option key in on_select events
+        theme_value = e.data or self.theme_dropdown.value
         if theme_value == "light":
             self.app.page.theme_mode = ft.ThemeMode.LIGHT
         elif theme_value == "dark":
@@ -301,8 +301,12 @@ class SettingsPage(ft.View):
             self.app.page.theme_mode = ft.ThemeMode.SYSTEM
         self.app.page.update()
 
-        # Re-navigate to refresh the view with new theme colors
-        self.app.navigate("/settings")
+        # Force page recreation by navigating away then back
+        # This is needed because same-route navigation doesn't trigger route change
+        self.app.page.views.clear()
+        from src.ui.pages.settings_page import SettingsPage
+        self.app.page.views.append(SettingsPage(self.app))
+        self.app.page.update()
 
     async def _on_sign_out(self, e: ft.ControlEvent) -> None:
         """Handle sign out."""

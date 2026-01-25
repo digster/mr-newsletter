@@ -850,3 +850,48 @@ Three components still have white/light backgrounds and hard-to-read text in dar
 - Fixed `SearchBar` to accept `colors` parameter and use theme-aware colors
 - Fixed `SortDropdown` to accept `colors` parameter and use theme-aware colors
 - Fixed `home_page.py` to pass `colors=self.colors` to SearchBar, SortDropdown, and NewsletterListItem
+
+## Fix Theme Switcher in Settings
+
+**Date:** 2026-01-25
+
+**Issue:** The theme switcher dropdown in the settings page doesn't trigger theme changes when a new option is selected. The dropdown UI works (shows options) but the theme remains unchanged.
+
+**Root Causes (Multiple):**
+
+1. **Wrong event property:** In Flet 0.80.1, the Dropdown control uses `on_select` for item selection events, NOT `on_change`. The code was assigning to `on_change` which silently does nothing (Python allows setting non-existent attributes).
+
+2. **Same-route navigation doesn't recreate page:** After setting `page.theme_mode`, the code called `navigate("/settings")` but Flet optimizes same-route navigation and doesn't trigger a route change. The page wasn't recreated with new theme colors.
+
+**Solution:**
+
+1. **Change `on_change` to `on_select`** in both `settings_page.py` and `sort_dropdown.py`:
+```python
+# Before
+self.theme_dropdown.on_change = self._on_theme_change
+
+# After
+self.theme_dropdown.on_select = self._on_theme_change
+```
+
+2. **Use `e.data` to get selected value** (standard pattern for `on_select` events):
+```python
+theme_value = e.data or self.theme_dropdown.value
+```
+
+3. **Force page recreation** by clearing views and appending new page:
+```python
+self.app.page.views.clear()
+from src.ui.pages.settings_page import SettingsPage
+self.app.page.views.append(SettingsPage(self.app))
+self.app.page.update()
+```
+
+**Key Learning:** In Flet 0.80.1:
+- `Dropdown.on_select` fires when an item is selected (provides `e.data` with the selected key)
+- `Dropdown.on_change` doesn't exist on the Dropdown class (Python silently ignores the assignment)
+- Same-route navigation (`navigate("/settings")` when already on `/settings`) doesn't trigger route change handlers
+
+**Files Modified:**
+- `src/ui/pages/settings_page.py` - Event handler + page refresh logic
+- `src/ui/components/sort_dropdown.py` - Changed `on_change` to `on_select`

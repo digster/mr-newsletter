@@ -248,16 +248,25 @@ class HSVColorPicker(ft.Column):
         self._force_update()
 
     def _throttled_update(self) -> None:
-        """Update visuals with throttling to prevent UI lag."""
+        """Update during drag - indicator and hex display only, skip slider colors.
+
+        During slider dragging, update color indicator and hex display but skip
+        the expensive slider color updates (6 property changes + 3 HSV conversions).
+        Uses self.update() via _update_display() since child.update() doesn't work
+        in Flet web. Full updates including slider colors happen on slider release.
+        """
         current_time = time.time() * 1000
         if current_time - self._last_update_time >= self._throttle_ms:
             self._last_update_time = current_time
-            self._update_slider_colors()
-            self._update_display()
-            self._notify_change()
+            # Skip slider color updates (expensive) - only update indicator + hex
+            self._update_display()  # This calls self.update() which works in Flet web
 
     def _force_update(self) -> None:
-        """Force immediate update without throttling (for final values)."""
+        """Full update on slider release - all visuals + notify parent.
+
+        Called on on_change_end events to ensure final color is properly
+        displayed with updated slider track colors and hex display.
+        """
         self._last_update_time = time.time() * 1000
         self._update_slider_colors()
         self._update_display()

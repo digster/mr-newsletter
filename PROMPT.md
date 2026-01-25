@@ -748,3 +748,63 @@ This cascade of updates on every slider tick overwhelms the rendering, especiall
 
 **File Changed:** `src/ui/components/gradient_color_picker.py`
 
+## Further Optimize Color Picker Slider Performance
+
+**Date:** 2026-01-25
+
+**Issue:** The 50ms throttle implemented previously improved performance, but users reported it can still be better during rapid slider dragging.
+
+**Previous Behavior:**
+During every throttled update (50ms), the picker:
+1. Updates slider colors (6 property changes: active_color + thumb_color × 3 sliders)
+2. Updates display (color indicator, hex display text, hex display bgcolor, contrast color)
+3. Notifies parent of color change
+4. Calls `self.update()` which repaints entire picker component
+
+**Optimization Strategy:**
+During slider dragging, users only need to see the color preview. Slider track/thumb colors are visual polish that can be deferred until the user releases the slider.
+
+**Solution:**
+
+1. **Increased throttle to 100ms** (from 50ms):
+   - 10fps is still perceptually smooth for color preview
+   - Cuts update frequency in half
+
+2. **Lightweight drag updates** (`_throttled_update`):
+   - Only update `_color_indicator.bgcolor`
+   - Call `_color_indicator.update()` instead of `self.update()` (updates single control, not whole picker)
+   - Skip: slider colors, hex display, parent notification
+
+3. **Full updates on release** (`_force_update`):
+   - Updates all slider track/thumb colors
+   - Updates hex display with proper contrast color
+   - Notifies parent component
+   - Called by `on_change_end` handlers when slider is released
+
+**Technical Insight:** Calling `_color_indicator.update()` instead of `self.update()` is significantly cheaper because it only triggers a repaint of the single 40×200px indicator container, not the entire picker column with all three sliders and labels.
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Fix Color Picker Performance Regression
+
+**Date:** 2026-01-25
+
+**Issue:** The previous optimization (100ms throttle with `_color_indicator.update()`) made the color picker completely unresponsive in Flet web mode. The color indicator and hex display did not update at all during slider dragging.
+
+**Root Cause:** In Flet web mode, calling `.update()` on a child control (`_color_indicator`) doesn't trigger a visual repaint. The framework requires `self.update()` (parent) or `page.update()` to properly trigger a repaint cycle. The previous working version used:
+- 50ms throttle
+- `self.update()` on the entire picker
+- Updated slider colors + display + notify on every throttled tick
+
+**Solution:** Revert to `self.update()` but skip the expensive slider color updates during drag:
+
+1. **Reverted throttle to 50ms** (from 100ms) - proven responsive timing
+2. **During drag** (`_throttled_update`): Update indicator + hex display via `_update_display()` which calls `self.update()`, but skip slider track/thumb color updates
+3. **On release** (`_force_update`): Full update including slider colors
+
+The slider color updates were the expensive part (6 property changes + 3 HSV conversions). Skipping them during drag while keeping `self.update()` provides smooth visual feedback without the rendering overhead.
+
+**Technical Insight:** The difference between child `.update()` and parent `.update()` behavior in Flet web is due to how the web renderer batches DOM updates. Child updates may not propagate properly, while parent updates trigger a full component re-render that includes all children.
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+

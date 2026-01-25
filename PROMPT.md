@@ -808,3 +808,23 @@ The slider color updates were the expensive part (6 property changes + 3 HSV con
 
 **File Changed:** `src/ui/components/gradient_color_picker.py`
 
+
+## Fix Newsletter Color Not Updating Immediately in Sidebar from Emails List Page
+
+**Date:** 2026-01-25
+
+**Issue:** When changing a newsletter's color from the emails list page, the sidebar tab color doesn't update immediately - only after navigating to another page. However, changing the color from the Manage section updates immediately.
+
+**Root Cause:** In `src/ui/pages/email_list_page.py` line 512, the code incorrectly called `self.app.sidebar.load_newsletters()`. This was wrong because:
+1. `self.app` (NewsletterApp) does not have a `sidebar` attribute
+2. Even if it did, `load_newsletters()` doesn't exist - the correct method is `update_newsletters()`
+3. The sidebar is stored on `self.sidebar`, not `self.app.sidebar`
+
+This call likely failed silently, meaning the sidebar never got updated after editing.
+
+**Solution:** Replaced the incorrect sidebar update call with `await self._load_data()` which:
+1. Reloads all newsletters from the database (getting the updated colors)
+2. Calls `self.sidebar.update_newsletters(self.newsletters)` to refresh the sidebar
+3. Is consistent with the pattern used in `newsletters_page.py`
+
+**Files Modified:** `src/ui/pages/email_list_page.py`

@@ -504,13 +504,10 @@ class EmailListPage(ft.View):
                 self.app.page.update()
                 self.app.show_snackbar("Newsletter updated")
 
-                # Update title and sidebar
+                # Update title
                 self.title_text.value = name
-                self.newsletter.name = name
-                self.newsletter.color = values.get("color")
-                self.newsletter.color_secondary = values.get("color_secondary")
-                self.app.sidebar.load_newsletters()
-                self.app.page.update()
+                # Reload data to update sidebar with new colors
+                await self._load_data()
             except Exception as ex:
                 self.app.show_snackbar(f"Error: {ex}", error=True)
 

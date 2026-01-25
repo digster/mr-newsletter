@@ -1,6 +1,6 @@
 """Search bar component for filtering newsletters."""
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import flet as ft
 
@@ -15,23 +15,25 @@ class SearchBar(ft.Container):
         placeholder: str = "Search newsletters...",
         on_change: Optional[Callable[[str], None]] = None,
         width: int = 280,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self._on_change_callback = on_change
         self._width = width
+        self._colors = colors or Colors.Light
 
         self.text_field = ft.TextField(
             hint_text=placeholder,
             hint_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_TERTIARY,
+                color=self._colors.TEXT_TERTIARY,
             ),
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=self._colors.TEXT_PRIMARY,
             ),
             border=ft.InputBorder.NONE,
             content_padding=ft.padding.only(left=0, right=Spacing.XS),
-            cursor_color=Colors.Light.ACCENT,
+            cursor_color=self._colors.ACCENT,
             expand=True,
             on_change=self._handle_change,
         )
@@ -39,7 +41,7 @@ class SearchBar(ft.Container):
         self.clear_button = ft.IconButton(
             icon=ft.Icons.CLOSE,
             icon_size=16,
-            icon_color=Colors.Light.TEXT_TERTIARY,
+            icon_color=self._colors.TEXT_TERTIARY,
             tooltip="Clear search",
             visible=False,
             style=ft.ButtonStyle(
@@ -55,7 +57,7 @@ class SearchBar(ft.Container):
                     ft.Icon(
                         ft.Icons.SEARCH,
                         size=18,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     ft.Container(width=Spacing.XS),
                     self.text_field,
@@ -73,7 +75,7 @@ class SearchBar(ft.Container):
                 bottom=0,
             ),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_TERTIARY,
+            bgcolor=self._colors.BG_TERTIARY,
         )
 
     def _handle_change(self, e: ft.ControlEvent) -> None:

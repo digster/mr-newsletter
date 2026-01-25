@@ -6,7 +6,7 @@ import flet as ft
 
 from src.services.auth_service import AuthService
 from src.services.gmail_service import GmailService
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -19,10 +19,13 @@ class LoginPage(ft.View):
         super().__init__(route="/login")
         self.app = app
 
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
+
         self.error_text = ft.Text(
             "",
             size=Typography.BODY_SMALL_SIZE,
-            color=Colors.Light.ERROR,
+            color=self.colors.ERROR,
             visible=False,
         )
         self.loading = ft.ProgressRing(
@@ -30,12 +33,12 @@ class LoginPage(ft.View):
             width=20,
             height=20,
             stroke_width=2,
-            color=Colors.Light.ACCENT,
+            color=self.colors.ACCENT,
         )
         self.status_text = ft.Text(
             "",
             size=Typography.BODY_SMALL_SIZE,
-            color=Colors.Light.TEXT_SECONDARY,
+            color=self.colors.TEXT_SECONDARY,
             visible=False,
         )
 
@@ -43,6 +46,7 @@ class LoginPage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content."""
+        c = self.colors  # Shorthand for readability
         return ft.Container(
             content=ft.Column(
                 [
@@ -53,14 +57,14 @@ class LoginPage(ft.View):
                             ft.Icon(
                                 ft.Icons.MARK_EMAIL_READ,
                                 size=32,
-                                color=Colors.Light.ACCENT,
+                                color=c.ACCENT,
                             ),
                             ft.Container(width=Spacing.SM),
                             ft.Text(
                                 "Newsletter",
                                 size=Typography.H2_SIZE,
                                 weight=ft.FontWeight.W_600,
-                                color=Colors.Light.TEXT_PRIMARY,
+                                color=c.TEXT_PRIMARY,
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
@@ -70,7 +74,7 @@ class LoginPage(ft.View):
                     ft.Text(
                         "Sign in to access your newsletters",
                         size=Typography.BODY_SIZE,
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=c.TEXT_SECONDARY,
                         text_align=ft.TextAlign.CENTER,
                     ),
                     ft.Container(height=Spacing.XL),
@@ -111,7 +115,7 @@ class LoginPage(ft.View):
                                 alignment=ft.MainAxisAlignment.CENTER,
                                 spacing=0,
                             ),
-                            bgcolor=Colors.Light.ACCENT,
+                            bgcolor=c.ACCENT,
                             color="#FFFFFF",
                             height=48,
                             width=240,
@@ -129,14 +133,14 @@ class LoginPage(ft.View):
                     ft.Text(
                         "Your data stays private and secure",
                         size=Typography.CAPTION_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=c.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.XL),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
             expand=True,
-            bgcolor=Colors.Light.BG_PRIMARY,
+            bgcolor=c.BG_PRIMARY,
             padding=Spacing.XL,
         )
 

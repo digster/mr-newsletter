@@ -1,7 +1,7 @@
 """Email list item component with clean, scannable design."""
 
 from datetime import date, datetime
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import flet as ft
 
@@ -21,6 +21,7 @@ class EmailListItem(ft.Container):
         is_starred: bool = False,
         on_click: Optional[Callable] = None,
         on_star: Optional[Callable] = None,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self.subject = subject
         self.sender = sender
@@ -30,16 +31,19 @@ class EmailListItem(ft.Container):
         self.is_starred = is_starred
         self._on_click = on_click
         self._on_star = on_star
+        self._colors = colors or Colors.Light
 
         # Format date based on recency
         self.date_str = self._format_date(received_at)
+
+        c = self._colors  # Shorthand
 
         super().__init__(
             content=self._build_content(),
             padding=ft.padding.symmetric(horizontal=Spacing.MD, vertical=Spacing.SM),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_SECONDARY if not is_read else Colors.Light.BG_PRIMARY,
-            border=ft.border.only(bottom=ft.BorderSide(1, Colors.Light.BORDER_SUBTLE)),
+            bgcolor=c.BG_SECONDARY if not is_read else c.BG_PRIMARY,
+            border=ft.border.only(bottom=ft.BorderSide(1, c.BORDER_SUBTLE)),
             animate=ft.Animation(100, ft.AnimationCurve.EASE_OUT),
             on_click=self._handle_click,
             on_hover=self._on_hover,
@@ -47,6 +51,7 @@ class EmailListItem(ft.Container):
 
     def _build_content(self) -> ft.Control:
         """Build list item content."""
+        c = self._colors  # Shorthand
         return ft.Row(
             [
                 # Unread indicator dot
@@ -54,7 +59,7 @@ class EmailListItem(ft.Container):
                     width=6,
                     height=6,
                     border_radius=BorderRadius.FULL,
-                    bgcolor=Colors.Light.UNREAD_DOT if not self.is_read else None,
+                    bgcolor=c.UNREAD_DOT if not self.is_read else None,
                 ),
                 ft.Container(width=Spacing.SM),
                 # Star button
@@ -62,9 +67,9 @@ class EmailListItem(ft.Container):
                     content=ft.Icon(
                         ft.Icons.STAR if self.is_starred else ft.Icons.STAR_OUTLINE,
                         size=18,
-                        color=Colors.Light.STAR_ACTIVE
+                        color=c.STAR_ACTIVE
                         if self.is_starred
-                        else Colors.Light.STAR_INACTIVE,
+                        else c.STAR_INACTIVE,
                     ),
                     on_click=self._handle_star,
                     padding=Spacing.XXS,
@@ -81,7 +86,7 @@ class EmailListItem(ft.Container):
                             weight=ft.FontWeight.W_500
                             if not self.is_read
                             else ft.FontWeight.W_400,
-                            color=Colors.Light.TEXT_PRIMARY,
+                            color=c.TEXT_PRIMARY,
                             max_lines=1,
                             overflow=ft.TextOverflow.ELLIPSIS,
                         ),
@@ -92,18 +97,18 @@ class EmailListItem(ft.Container):
                                 ft.Text(
                                     self.sender,
                                     size=Typography.CAPTION_SIZE,
-                                    color=Colors.Light.TEXT_SECONDARY,
+                                    color=c.TEXT_SECONDARY,
                                     weight=ft.FontWeight.W_500,
                                 ),
                                 ft.Text(
                                     " — ",
                                     size=Typography.CAPTION_SIZE,
-                                    color=Colors.Light.TEXT_TERTIARY,
+                                    color=c.TEXT_TERTIARY,
                                 ),
                                 ft.Text(
                                     self.snippet,
                                     size=Typography.CAPTION_SIZE,
-                                    color=Colors.Light.TEXT_TERTIARY,
+                                    color=c.TEXT_TERTIARY,
                                     max_lines=1,
                                     overflow=ft.TextOverflow.ELLIPSIS,
                                     expand=True,
@@ -119,7 +124,7 @@ class EmailListItem(ft.Container):
                 ft.Text(
                     self.date_str,
                     size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                     font_family="monospace",
                 ),
             ],
@@ -153,12 +158,13 @@ class EmailListItem(ft.Container):
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
         """Handle hover state."""
+        c = self._colors
         if e.data == "true":
-            self.bgcolor = Colors.Light.HOVER
+            self.bgcolor = c.HOVER
         else:
             self.bgcolor = (
-                Colors.Light.BG_SECONDARY
+                c.BG_SECONDARY
                 if not self.is_read
-                else Colors.Light.BG_PRIMARY
+                else c.BG_PRIMARY
             )
         self.update()

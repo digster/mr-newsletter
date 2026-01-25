@@ -1,7 +1,7 @@
 """Newsletter card component with sophisticated styling."""
 
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import flet as ft
 
@@ -22,22 +22,26 @@ class NewsletterCard(ft.Container):
         color: Optional[str] = None,
         on_click: Optional[Callable] = None,
         on_refresh: Optional[Callable] = None,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self.name = name
         self.label = label
         self.unread_count = unread_count
         self.total_count = total_count
         self.last_email_received_at = last_email_received_at
-        self.accent_color = color or Colors.Light.ACCENT
+        self._colors = colors or Colors.Light
+        self.accent_color = color or self._colors.ACCENT
         self._on_click = on_click
         self._on_refresh = on_refresh
+
+        c = self._colors  # Shorthand
 
         super().__init__(
             content=self._build_content(),
             padding=Spacing.SM,
             border_radius=BorderRadius.MD,
-            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
-            bgcolor=Colors.Light.BG_PRIMARY,
+            border=ft.border.all(1, c.BORDER_DEFAULT),
+            bgcolor=c.BG_PRIMARY,
             shadow=ft.BoxShadow(
                 spread_radius=0,
                 blur_radius=6,
@@ -50,6 +54,7 @@ class NewsletterCard(ft.Container):
 
     def _build_content(self) -> ft.Control:
         """Build card content."""
+        c = self._colors  # Shorthand
         return ft.Column(
             [
                 # Header row: Title on left, timestamp on right
@@ -59,7 +64,7 @@ class NewsletterCard(ft.Container):
                             self.name,
                             size=Typography.H4_SIZE,
                             weight=ft.FontWeight.W_600,
-                            color=Colors.Light.TEXT_PRIMARY,
+                            color=c.TEXT_PRIMARY,
                             max_lines=1,
                             overflow=ft.TextOverflow.ELLIPSIS,
                         ),
@@ -67,13 +72,13 @@ class NewsletterCard(ft.Container):
                         ft.Icon(
                             ft.Icons.ACCESS_TIME,
                             size=14,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=c.TEXT_TERTIARY,
                         ),
                         ft.Container(width=Spacing.XXS),
                         ft.Text(
                             format_relative_time(self.last_email_received_at),
                             size=Typography.CAPTION_SIZE,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=c.TEXT_TERTIARY,
                         ),
                     ],
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -82,7 +87,7 @@ class NewsletterCard(ft.Container):
                 ft.Text(
                     self.label,
                     size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                     max_lines=1,
                     overflow=ft.TextOverflow.ELLIPSIS,
                 ),
@@ -109,18 +114,18 @@ class NewsletterCard(ft.Container):
                                 "View emails",
                                 size=Typography.BODY_SIZE,
                                 weight=ft.FontWeight.W_500,
-                                color=Colors.Light.ACCENT,
+                                color=c.ACCENT,
                             ),
                             ft.Icon(
                                 ft.Icons.ARROW_FORWARD,
                                 size=18,
-                                color=Colors.Light.ACCENT,
+                                color=c.ACCENT,
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
                         spacing=Spacing.XS,
                     ),
-                    bgcolor=Colors.Light.ACCENT_MUTED,
+                    bgcolor=c.ACCENT_MUTED,
                     border_radius=BorderRadius.SM,
                     padding=ft.padding.symmetric(vertical=Spacing.SM),
                     on_click=self._on_click,
@@ -132,7 +137,7 @@ class NewsletterCard(ft.Container):
                         ft.IconButton(
                             icon=ft.Icons.REFRESH,
                             icon_size=18,
-                            icon_color=Colors.Light.TEXT_TERTIARY,
+                            icon_color=c.TEXT_TERTIARY,
                             tooltip="Refresh",
                             style=ft.ButtonStyle(
                                 shape=ft.RoundedRectangleBorder(
@@ -152,18 +157,19 @@ class NewsletterCard(ft.Container):
         self, value: str, label: str, highlight: bool = False
     ) -> ft.Control:
         """Build a stat display with large centered numbers."""
+        c = self._colors
         return ft.Column(
             [
                 ft.Text(
                     value,
                     size=Typography.H1_SIZE,
                     weight=ft.FontWeight.W_600,
-                    color=Colors.Light.ACCENT if highlight else Colors.Light.TEXT_PRIMARY,
+                    color=c.ACCENT if highlight else c.TEXT_PRIMARY,
                 ),
                 ft.Text(
                     label,
                     size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                 ),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -172,6 +178,7 @@ class NewsletterCard(ft.Container):
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
         """Handle hover state with elevated shadow."""
+        c = self._colors
         if e.data == "true":
             self.shadow = ft.BoxShadow(
                 spread_radius=0,
@@ -179,7 +186,7 @@ class NewsletterCard(ft.Container):
                 color=ft.Colors.with_opacity(0.12, ft.Colors.BLACK),
                 offset=ft.Offset(0, 8),
             )
-            self.border = ft.border.all(1, Colors.Light.BORDER_STRONG)
+            self.border = ft.border.all(1, c.BORDER_STRONG)
         else:
             self.shadow = ft.BoxShadow(
                 spread_radius=0,
@@ -187,5 +194,5 @@ class NewsletterCard(ft.Container):
                 color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK),
                 offset=ft.Offset(0, 2),
             )
-            self.border = ft.border.all(1, Colors.Light.BORDER_DEFAULT)
+            self.border = ft.border.all(1, c.BORDER_DEFAULT)
         self.update()

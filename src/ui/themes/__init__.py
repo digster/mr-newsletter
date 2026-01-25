@@ -8,6 +8,7 @@ from .design_tokens import (
     Shadows,
     Spacing,
     Typography,
+    get_colors,
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "Shadows",
     "Spacing",
     "Typography",
+    "get_colors",
 ]

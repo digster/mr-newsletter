@@ -1,7 +1,7 @@
 """Newsletter list item component for compact list view."""
 
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import flet as ft
 
@@ -24,21 +24,25 @@ class NewsletterListItem(ft.Container):
         color_secondary: Optional[str] = None,
         on_click: Optional[Callable] = None,
         on_refresh: Optional[Callable] = None,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self.name = name
         self.label = label
         self.unread_count = unread_count
         self.total_count = total_count
         self.last_email_received_at = last_email_received_at
-        self.accent_color = color or Colors.Light.ACCENT
+        self._colors = colors or Colors.Light
+        self.accent_color = color or self._colors.ACCENT
         self.accent_color_secondary = color_secondary
         self._on_click = on_click
         self._on_refresh = on_refresh
 
+        c = self._colors  # Shorthand
+
         self.refresh_button = ft.IconButton(
             icon=ft.Icons.REFRESH,
             icon_size=16,
-            icon_color=Colors.Light.TEXT_TERTIARY,
+            icon_color=c.TEXT_TERTIARY,
             tooltip="Refresh",
             visible=False,
             style=ft.ButtonStyle(
@@ -55,7 +59,7 @@ class NewsletterListItem(ft.Container):
                 vertical=Spacing.SM,
             ),
             border=ft.border.only(
-                bottom=ft.BorderSide(1, Colors.Light.BORDER_SUBTLE)
+                bottom=ft.BorderSide(1, c.BORDER_SUBTLE)
             ),
             on_hover=self._on_hover,
             on_click=self._handle_click,
@@ -64,15 +68,17 @@ class NewsletterListItem(ft.Container):
 
     def _build_content(self) -> ft.Control:
         """Build list item content."""
+        c = self._colors  # Shorthand
+
         # Unread badge
         unread_badge = ft.Container(
             content=ft.Text(
                 f"{self.unread_count} unread",
                 size=Typography.CAPTION_SIZE,
-                color=Colors.Light.BG_PRIMARY if self.unread_count > 0 else Colors.Light.TEXT_TERTIARY,
+                color=c.BG_PRIMARY if self.unread_count > 0 else c.TEXT_TERTIARY,
                 weight=ft.FontWeight.W_500,
             ),
-            bgcolor=Colors.Light.ACCENT if self.unread_count > 0 else None,
+            bgcolor=c.ACCENT if self.unread_count > 0 else None,
             border_radius=BorderRadius.SM,
             padding=ft.padding.symmetric(
                 horizontal=Spacing.XS,
@@ -97,14 +103,14 @@ class NewsletterListItem(ft.Container):
                             self.name,
                             size=Typography.BODY_SIZE,
                             weight=ft.FontWeight.W_500,
-                            color=Colors.Light.TEXT_PRIMARY,
+                            color=c.TEXT_PRIMARY,
                             max_lines=1,
                             overflow=ft.TextOverflow.ELLIPSIS,
                         ),
                         ft.Text(
                             self.label,
                             size=Typography.CAPTION_SIZE,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=c.TEXT_TERTIARY,
                             max_lines=1,
                             overflow=ft.TextOverflow.ELLIPSIS,
                         ),
@@ -116,7 +122,7 @@ class NewsletterListItem(ft.Container):
                 ft.Text(
                     format_relative_time(self.last_email_received_at),
                     size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                     width=100,
                     text_align=ft.TextAlign.RIGHT,
                 ),
@@ -130,7 +136,7 @@ class NewsletterListItem(ft.Container):
                 ft.Text(
                     str(self.total_count),
                     size=Typography.BODY_SMALL_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                     width=50,
                     text_align=ft.TextAlign.RIGHT,
                     font_family="monospace",
@@ -144,8 +150,9 @@ class NewsletterListItem(ft.Container):
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
         """Handle hover state."""
+        c = self._colors
         if e.data == "true":
-            self.bgcolor = Colors.Light.BG_TERTIARY
+            self.bgcolor = c.BG_TERTIARY
             self.refresh_button.visible = True
         else:
             self.bgcolor = None

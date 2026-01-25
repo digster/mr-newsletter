@@ -1,6 +1,6 @@
 """Sort dropdown component for selecting newsletter sort order."""
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import flet as ft
 
@@ -21,9 +21,11 @@ class SortDropdown(ft.Container):
         self,
         current_sort: str = "recent",
         on_change: Optional[Callable[[str], None]] = None,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self._current_sort = current_sort
         self._on_change_callback = on_change
+        self._colors = colors or Colors.Light
 
         self.dropdown = ft.Dropdown(
             value=current_sort,
@@ -33,7 +35,7 @@ class SortDropdown(ft.Container):
             ],
             text_style=ft.TextStyle(
                 size=Typography.BODY_SMALL_SIZE,
-                color=Colors.Light.TEXT_SECONDARY,
+                color=self._colors.TEXT_SECONDARY,
             ),
             border=ft.InputBorder.NONE,
             content_padding=ft.Padding(
@@ -52,7 +54,7 @@ class SortDropdown(ft.Container):
                     ft.Icon(
                         ft.Icons.SORT,
                         size=16,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     self.dropdown,
                 ],
@@ -61,7 +63,7 @@ class SortDropdown(ft.Container):
             ),
             padding=ft.padding.only(left=Spacing.SM),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_TERTIARY,
+            bgcolor=self._colors.BG_TERTIARY,
         )
 
     def _handle_change(self, e: ft.ControlEvent) -> None:

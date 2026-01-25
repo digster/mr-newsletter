@@ -4,6 +4,11 @@ Sophistication & Trust design direction - cool slate tones with layered depth.
 Inspired by Stripe and Mercury.
 """
 
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    import flet as ft
+
 
 class Spacing:
     """4px grid-based spacing tokens."""
@@ -174,3 +179,29 @@ class Animation:
     # Easing
     EASE_OUT = "cubic-bezier(0.25, 1, 0.5, 1)"
     EASE_IN_OUT = "cubic-bezier(0.4, 0, 0.2, 1)"
+
+
+def get_colors(page: "ft.Page") -> Union[type[Colors.Light], type[Colors.Dark]]:
+    """Get the appropriate Colors class based on current theme.
+
+    Returns Colors.Dark if dark mode is active, otherwise Colors.Light.
+
+    Args:
+        page: The Flet page object to check theme mode from.
+
+    Returns:
+        Colors.Light or Colors.Dark class based on current theme.
+    """
+    if page is None:
+        return Colors.Light
+
+    # Import here to avoid circular imports
+    import flet as ft
+
+    if page.theme_mode == ft.ThemeMode.DARK:
+        return Colors.Dark
+    elif page.theme_mode == ft.ThemeMode.SYSTEM:
+        # Check system preference
+        if page.platform_brightness == ft.Brightness.DARK:
+            return Colors.Dark
+    return Colors.Light

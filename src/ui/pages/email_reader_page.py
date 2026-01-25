@@ -9,7 +9,7 @@ from flet_webview import WebView
 from src.services.email_service import EmailService
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import Sidebar
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 from src.utils.html_sanitizer import sanitize_html_for_webview
 
 if TYPE_CHECKING:
@@ -26,24 +26,27 @@ class EmailReaderPage(ft.View):
         self.email = None
         self.newsletters = []
 
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
+
         self.content_area = ft.Container(expand=True)
         self.loading = ft.ProgressRing(
             visible=False,
             width=20,
             height=20,
             stroke_width=2,
-            color=Colors.Light.ACCENT,
+            color=self.colors.ACCENT,
         )
         self.subject_text = ft.Text(
             "Loading...",
             size=Typography.H3_SIZE,
             weight=ft.FontWeight.W_600,
-            color=Colors.Light.TEXT_PRIMARY,
+            color=self.colors.TEXT_PRIMARY,
         )
 
         self.star_button = ft.IconButton(
             icon=ft.Icons.STAR_OUTLINE,
-            icon_color=Colors.Light.STAR_INACTIVE,
+            icon_color=self.colors.STAR_INACTIVE,
             icon_size=20,
             tooltip="Star",
             style=ft.ButtonStyle(
@@ -56,6 +59,7 @@ class EmailReaderPage(ft.View):
             current_route=f"/email/{email_id}",
             newsletters=[],
             on_navigate=self._handle_navigate,
+            page=self.app.page,
         )
 
         self.controls = [self._build_content()]
@@ -65,6 +69,7 @@ class EmailReaderPage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content with sidebar."""
+        c = self.colors  # Shorthand for readability
         return ft.Row(
             [
                 # Sidebar
@@ -79,7 +84,7 @@ class EmailReaderPage(ft.View):
                                     [
                                         ft.IconButton(
                                             icon=ft.Icons.ARROW_BACK,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
@@ -94,7 +99,7 @@ class EmailReaderPage(ft.View):
                                         self.star_button,
                                         ft.IconButton(
                                             icon=ft.Icons.MARK_EMAIL_UNREAD,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             tooltip="Mark as unread",
                                             style=ft.ButtonStyle(
@@ -108,7 +113,7 @@ class EmailReaderPage(ft.View):
                                         ),
                                         ft.IconButton(
                                             icon=ft.Icons.ARCHIVE_OUTLINED,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             tooltip="Archive",
                                             style=ft.ButtonStyle(
@@ -124,7 +129,7 @@ class EmailReaderPage(ft.View):
                                 ),
                                 padding=ft.padding.only(bottom=Spacing.MD),
                                 border=ft.border.only(
-                                    bottom=ft.BorderSide(1, Colors.Light.BORDER_SUBTLE)
+                                    bottom=ft.BorderSide(1, c.BORDER_SUBTLE)
                                 ),
                             ),
                             # Email content (scrollable)
@@ -138,7 +143,7 @@ class EmailReaderPage(ft.View):
                     ),
                     padding=Spacing.LG,
                     expand=True,
-                    bgcolor=Colors.Light.BG_PRIMARY,
+                    bgcolor=c.BG_PRIMARY,
                 ),
             ],
             expand=True,
@@ -182,9 +187,9 @@ class EmailReaderPage(ft.View):
                 ft.Icons.STAR if self.email.is_starred else ft.Icons.STAR_OUTLINE
             )
             self.star_button.icon_color = (
-                Colors.Light.STAR_ACTIVE
+                self.colors.STAR_ACTIVE
                 if self.email.is_starred
-                else Colors.Light.STAR_INACTIVE
+                else self.colors.STAR_INACTIVE
             )
 
             # Build content
@@ -200,6 +205,8 @@ class EmailReaderPage(ft.View):
         """Build the email content view."""
         if not self.email:
             return ft.Container()
+
+        c = self.colors  # Shorthand for readability
 
         # Format date
         date_str = self.email.received_at.strftime("%B %d, %Y at %I:%M %p")
@@ -232,7 +239,7 @@ class EmailReaderPage(ft.View):
                     self.email.subject,
                     size=Typography.H2_SIZE,
                     weight=ft.FontWeight.W_600,
-                    color=Colors.Light.TEXT_PRIMARY,
+                    color=c.TEXT_PRIMARY,
                 ),
                 ft.Container(height=Spacing.LG),
                 # Sender info
@@ -247,8 +254,8 @@ class EmailReaderPage(ft.View):
                                 weight=ft.FontWeight.W_500,
                             ),
                             radius=20,
-                            bgcolor=Colors.Light.BG_TERTIARY,
-                            color=Colors.Light.TEXT_PRIMARY,
+                            bgcolor=c.BG_TERTIARY,
+                            color=c.TEXT_PRIMARY,
                         ),
                         ft.Container(width=Spacing.SM),
                         ft.Column(
@@ -257,12 +264,12 @@ class EmailReaderPage(ft.View):
                                     self.email.sender_name or self.email.sender_email,
                                     size=Typography.BODY_SIZE,
                                     weight=ft.FontWeight.W_500,
-                                    color=Colors.Light.TEXT_PRIMARY,
+                                    color=c.TEXT_PRIMARY,
                                 ),
                                 ft.Text(
                                     self.email.sender_email,
                                     size=Typography.CAPTION_SIZE,
-                                    color=Colors.Light.TEXT_TERTIARY,
+                                    color=c.TEXT_TERTIARY,
                                 ),
                             ],
                             spacing=2,
@@ -271,14 +278,14 @@ class EmailReaderPage(ft.View):
                         ft.Text(
                             date_str,
                             size=Typography.CAPTION_SIZE,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=c.TEXT_TERTIARY,
                             font_family="monospace",
                         ),
                     ],
                 ),
                 ft.Container(height=Spacing.LG),
                 # Divider
-                ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                ft.Divider(height=1, color=c.BORDER_SUBTLE),
                 ft.Container(height=Spacing.MD),
                 # Email body - render in WebView
                 ft.Container(
@@ -312,9 +319,9 @@ class EmailReaderPage(ft.View):
                     ft.Icons.STAR if self.email.is_starred else ft.Icons.STAR_OUTLINE
                 )
                 self.star_button.icon_color = (
-                    Colors.Light.STAR_ACTIVE
+                    self.colors.STAR_ACTIVE
                     if self.email.is_starred
-                    else Colors.Light.STAR_INACTIVE
+                    else self.colors.STAR_INACTIVE
                 )
                 self.app.page.update()
         except Exception as ex:

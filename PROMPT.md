@@ -828,3 +828,25 @@ This call likely failed silently, meaning the sidebar never got updated after ed
 3. Is consistent with the pattern used in `newsletters_page.py`
 
 **Files Modified:** `src/ui/pages/email_list_page.py`
+
+---
+
+## Dark Mode Fix - Remaining Issues (2026-01-25)
+
+Implement the following plan:
+
+# Dark Mode Fix - Remaining Issues
+
+## Problem Summary
+
+Three components still have white/light backgrounds and hard-to-read text in dark mode:
+
+1. **Search bar** - white background in dark mode
+2. **Sort dropdown** - white background in dark mode
+3. **Newsletter list item** - "Cine" text is hard to read (light gray on dark background)
+
+## Implementation Summary
+
+- Fixed `SearchBar` to accept `colors` parameter and use theme-aware colors
+- Fixed `SortDropdown` to accept `colors` parameter and use theme-aware colors
+- Fixed `home_page.py` to pass `colors=self.colors` to SearchBar, SortDropdown, and NewsletterListItem

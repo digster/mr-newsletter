@@ -7,7 +7,7 @@ import flet as ft
 from src.services.auth_service import AuthService
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import ConfirmDialog, Sidebar
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -21,33 +21,52 @@ class SettingsPage(ft.View):
         self.app = app
         self.newsletters = []
 
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
+
         self.user_email_text = ft.Text(
             "Loading...",
             size=Typography.BODY_SIZE,
-            color=Colors.Light.TEXT_SECONDARY,
+            color=self.colors.TEXT_SECONDARY,
         )
+
+        # Determine current theme value for dropdown
+        theme_value = "system"
+        if self.app.page.theme_mode == ft.ThemeMode.LIGHT:
+            theme_value = "light"
+        elif self.app.page.theme_mode == ft.ThemeMode.DARK:
+            theme_value = "dark"
 
         self.theme_dropdown = ft.Dropdown(
             label="Theme",
-            value="system",
+            value=theme_value,
             options=[
                 ft.dropdown.Option("system", "System"),
                 ft.dropdown.Option("light", "Light"),
                 ft.dropdown.Option("dark", "Dark"),
             ],
-            on_select=self._on_theme_change,
             width=200,
             border_radius=BorderRadius.SM,
             content_padding=ft.padding.symmetric(
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=self.colors.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=self.colors.TEXT_SECONDARY,
+            ),
         )
+        # Set on_change after creation (required for newer Flet versions)
+        self.theme_dropdown.on_change = self._on_theme_change
 
         self.sidebar = Sidebar(
             current_route="/settings",
             newsletters=[],
             on_navigate=self._handle_navigate,
+            page=self.app.page,
         )
 
         self.controls = [self._build_content()]
@@ -57,6 +76,7 @@ class SettingsPage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content with sidebar."""
+        c = self.colors  # Shorthand for readability
         return ft.Row(
             [
                 # Sidebar
@@ -71,7 +91,7 @@ class SettingsPage(ft.View):
                                     [
                                         ft.IconButton(
                                             icon=ft.Icons.ARROW_BACK,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
@@ -87,7 +107,7 @@ class SettingsPage(ft.View):
                                             "Settings",
                                             size=Typography.H1_SIZE,
                                             weight=ft.FontWeight.W_600,
-                                            color=Colors.Light.TEXT_PRIMARY,
+                                            color=c.TEXT_PRIMARY,
                                         ),
                                     ],
                                 ),
@@ -108,10 +128,10 @@ class SettingsPage(ft.View):
                                                                 content=ft.Icon(
                                                                     ft.Icons.PERSON,
                                                                     size=20,
-                                                                    color=Colors.Light.TEXT_PRIMARY,
+                                                                    color=c.TEXT_PRIMARY,
                                                                 ),
                                                                 radius=24,
-                                                                bgcolor=Colors.Light.BG_TERTIARY,
+                                                                bgcolor=c.BG_TERTIARY,
                                                             ),
                                                             ft.Container(width=Spacing.MD),
                                                             ft.Column(
@@ -120,7 +140,7 @@ class SettingsPage(ft.View):
                                                                         "Google Account",
                                                                         size=Typography.BODY_SIZE,
                                                                         weight=ft.FontWeight.W_500,
-                                                                        color=Colors.Light.TEXT_PRIMARY,
+                                                                        color=c.TEXT_PRIMARY,
                                                                     ),
                                                                     self.user_email_text,
                                                                 ],
@@ -135,20 +155,20 @@ class SettingsPage(ft.View):
                                                                 ft.Icon(
                                                                     ft.Icons.LOGOUT,
                                                                     size=16,
-                                                                    color=Colors.Light.ERROR,
+                                                                    color=c.ERROR,
                                                                 ),
                                                                 ft.Container(
                                                                     width=Spacing.XS
                                                                 ),
                                                                 ft.Text(
                                                                     "Sign Out",
-                                                                    color=Colors.Light.ERROR,
+                                                                    color=c.ERROR,
                                                                 ),
                                                             ],
                                                         ),
                                                         style=ft.ButtonStyle(
                                                             side=ft.BorderSide(
-                                                                1, Colors.Light.ERROR
+                                                                1, c.ERROR
                                                             ),
                                                             shape=ft.RoundedRectangleBorder(
                                                                 radius=BorderRadius.SM
@@ -178,14 +198,14 @@ class SettingsPage(ft.View):
                                                             ft.Icon(
                                                                 ft.Icons.MARK_EMAIL_READ,
                                                                 size=20,
-                                                                color=Colors.Light.ACCENT,
+                                                                color=c.ACCENT,
                                                             ),
                                                             ft.Container(width=Spacing.XS),
                                                             ft.Text(
                                                                 "Newsletter Reader",
                                                                 size=Typography.BODY_SIZE,
                                                                 weight=ft.FontWeight.W_500,
-                                                                color=Colors.Light.TEXT_PRIMARY,
+                                                                color=c.TEXT_PRIMARY,
                                                             ),
                                                         ],
                                                     ),
@@ -193,14 +213,14 @@ class SettingsPage(ft.View):
                                                     ft.Text(
                                                         "Version 0.1.0",
                                                         size=Typography.CAPTION_SIZE,
-                                                        color=Colors.Light.TEXT_TERTIARY,
+                                                        color=c.TEXT_TERTIARY,
                                                         font_family="monospace",
                                                     ),
                                                     ft.Container(height=Spacing.SM),
                                                     ft.Text(
                                                         "A simple newsletter reader with Gmail integration.",
                                                         size=Typography.BODY_SMALL_SIZE,
-                                                        color=Colors.Light.TEXT_SECONDARY,
+                                                        color=c.TEXT_SECONDARY,
                                                     ),
                                                 ],
                                                 spacing=0,
@@ -216,7 +236,7 @@ class SettingsPage(ft.View):
                     ),
                     padding=Spacing.LG,
                     expand=True,
-                    bgcolor=Colors.Light.BG_SECONDARY,
+                    bgcolor=c.BG_SECONDARY,
                 ),
             ],
             expand=True,
@@ -225,21 +245,22 @@ class SettingsPage(ft.View):
 
     def _build_section(self, title: str, content: ft.Control) -> ft.Control:
         """Build a settings section with title and card."""
+        c = self.colors
         return ft.Column(
             [
                 ft.Text(
                     title.upper(),
                     size=11,
                     weight=ft.FontWeight.W_500,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=c.TEXT_TERTIARY,
                 ),
                 ft.Container(height=Spacing.SM),
                 ft.Container(
                     content=content,
                     padding=Spacing.MD,
                     border_radius=BorderRadius.MD,
-                    border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
-                    bgcolor=Colors.Light.BG_PRIMARY,
+                    border=ft.border.all(1, c.BORDER_DEFAULT),
+                    bgcolor=c.BG_PRIMARY,
                 ),
             ],
             spacing=0,
@@ -279,6 +300,9 @@ class SettingsPage(ft.View):
         else:
             self.app.page.theme_mode = ft.ThemeMode.SYSTEM
         self.app.page.update()
+
+        # Re-navigate to refresh the view with new theme colors
+        self.app.navigate("/settings")
 
     async def _on_sign_out(self, e: ft.ControlEvent) -> None:
         """Handle sign out."""

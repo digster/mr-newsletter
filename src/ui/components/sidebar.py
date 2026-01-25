@@ -1,10 +1,10 @@
 """Sidebar navigation component with newsletter list."""
 
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import flet as ft
 
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     pass
@@ -22,10 +22,12 @@ class NavItem(ft.Container):
         is_active: bool = False,
         on_click: Optional[Callable] = None,
         badge_count: Optional[int] = None,
+        colors: Optional[Union[type[Colors.Light], type[Colors.Dark]]] = None,
     ):
         self.route = route
         self.is_active = is_active
         self._on_click = on_click
+        self._colors = colors or Colors.Light
 
         # Build badge if needed
         badge = None
@@ -37,7 +39,7 @@ class NavItem(ft.Container):
                     color="#FFFFFF",
                     weight=ft.FontWeight.W_500,
                 ),
-                bgcolor=Colors.Light.ACCENT,
+                bgcolor=self._colors.ACCENT,
                 border_radius=BorderRadius.FULL,
                 padding=ft.padding.symmetric(horizontal=6, vertical=2),
             )
@@ -48,9 +50,9 @@ class NavItem(ft.Container):
                     ft.Icon(
                         icon_filled if is_active else icon,
                         size=20,
-                        color=Colors.Light.TEXT_PRIMARY
+                        color=self._colors.TEXT_PRIMARY
                         if is_active
-                        else Colors.Light.TEXT_SECONDARY,
+                        else self._colors.TEXT_SECONDARY,
                     ),
                     ft.Container(width=Spacing.SM),
                     ft.Text(
@@ -59,9 +61,9 @@ class NavItem(ft.Container):
                         weight=ft.FontWeight.W_500
                         if is_active
                         else ft.FontWeight.W_400,
-                        color=Colors.Light.TEXT_PRIMARY
+                        color=self._colors.TEXT_PRIMARY
                         if is_active
-                        else Colors.Light.TEXT_SECONDARY,
+                        else self._colors.TEXT_SECONDARY,
                         expand=True,
                     ),
                     badge if badge else ft.Container(),
@@ -69,7 +71,7 @@ class NavItem(ft.Container):
             ),
             padding=ft.padding.symmetric(horizontal=Spacing.SM, vertical=Spacing.XS),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_TERTIARY if is_active else None,
+            bgcolor=self._colors.BG_TERTIARY if is_active else None,
             on_click=self._handle_click,
             on_hover=self._on_hover,
         )
@@ -80,7 +82,7 @@ class NavItem(ft.Container):
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
         if not self.is_active:
-            self.bgcolor = Colors.Light.HOVER if e.data == "true" else None
+            self.bgcolor = self._colors.HOVER if e.data == "true" else None
             self.update()
 
 
@@ -182,17 +184,19 @@ class Sidebar(ft.Container):
         newsletters: Optional[list] = None,
         on_navigate: Optional[Callable] = None,
         user_email: Optional[str] = None,
+        page: Optional[ft.Page] = None,
     ):
         self.current_route = current_route
         self.newsletters = newsletters or []
         self.on_navigate = on_navigate
         self.user_email = user_email
+        self._colors = get_colors(page) if page else Colors.Light
 
         super().__init__(
             content=self._build_content(),
             width=self.WIDTH,
-            bgcolor=Colors.Light.BG_PRIMARY,
-            border=ft.border.only(right=ft.BorderSide(1, Colors.Light.BORDER_DEFAULT)),
+            bgcolor=self._colors.BG_PRIMARY,
+            border=ft.border.only(right=ft.BorderSide(1, self._colors.BORDER_DEFAULT)),
             padding=ft.padding.symmetric(vertical=Spacing.MD, horizontal=Spacing.SM),
         )
 
@@ -211,6 +215,7 @@ class Sidebar(ft.Container):
                     route="/home",
                     is_active=self.current_route == "/home",
                     on_click=self.on_navigate,
+                    colors=self._colors,
                 ),
                 ft.Container(height=Spacing.LG),
                 # Newsletters section
@@ -218,7 +223,7 @@ class Sidebar(ft.Container):
                 # Spacer
                 ft.Container(expand=True),
                 # Footer nav
-                ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                ft.Divider(height=1, color=self._colors.BORDER_SUBTLE),
                 ft.Container(height=Spacing.SM),
                 NavItem(
                     icon=ft.Icons.FOLDER_OUTLINED,
@@ -227,6 +232,7 @@ class Sidebar(ft.Container):
                     route="/newsletters",
                     is_active=self.current_route == "/newsletters",
                     on_click=self.on_navigate,
+                    colors=self._colors,
                 ),
                 NavItem(
                     icon=ft.Icons.SETTINGS_OUTLINED,
@@ -235,6 +241,7 @@ class Sidebar(ft.Container):
                     route="/settings",
                     is_active=self.current_route == "/settings",
                     on_click=self.on_navigate,
+                    colors=self._colors,
                 ),
             ],
             expand=True,
@@ -249,14 +256,14 @@ class Sidebar(ft.Container):
                     ft.Icon(
                         ft.Icons.MARK_EMAIL_READ,
                         size=24,
-                        color=Colors.Light.ACCENT,
+                        color=self._colors.ACCENT,
                     ),
                     ft.Container(width=Spacing.XS),
                     ft.Text(
                         "Newsletter",
                         size=Typography.H4_SIZE,
                         weight=ft.FontWeight.W_600,
-                        color=Colors.Light.TEXT_PRIMARY,
+                        color=self._colors.TEXT_PRIMARY,
                     ),
                 ],
             ),
@@ -275,7 +282,7 @@ class Sidebar(ft.Container):
                 NewsletterNavItem(
                     newsletter_id=nl.id,
                     name=nl.name,
-                    color=nl.color or Colors.Light.ACCENT,
+                    color=nl.color or self._colors.ACCENT,
                     color_secondary=nl.color_secondary,
                     unread_count=nl.unread_count,
                     is_active=is_active,
@@ -291,7 +298,7 @@ class Sidebar(ft.Container):
                         "NEWSLETTERS",
                         size=11,
                         weight=ft.FontWeight.W_500,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     padding=ft.padding.only(left=Spacing.SM, bottom=Spacing.XS),
                 ),

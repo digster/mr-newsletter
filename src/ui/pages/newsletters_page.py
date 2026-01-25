@@ -8,7 +8,7 @@ from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import AddNewsletterDialog, ConfirmDialog, EditNewsletterDialog, Sidebar
 from src.ui.components.gradient_dot import create_gradient_dot
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -22,10 +22,12 @@ class NewsletterListItem(ft.Container):
         newsletter,
         on_edit=None,
         on_delete=None,
+        colors=None,
     ):
         self.newsletter = newsletter
         self._on_edit = on_edit
         self._on_delete = on_delete
+        self._colors = colors or Colors.Light
 
         # Format auto-fetch text
         if newsletter.auto_fetch_enabled:
@@ -41,12 +43,14 @@ class NewsletterListItem(ft.Container):
         else:
             auto_fetch_text = "Manual only"
 
+        c = self._colors  # Shorthand
+
         super().__init__(
             content=ft.Row(
                 [
                     # Color dot (with gradient support)
                     create_gradient_dot(
-                        newsletter.color or Colors.Light.ACCENT,
+                        newsletter.color or c.ACCENT,
                         newsletter.color_secondary,
                         size=10,
                     ),
@@ -58,32 +62,32 @@ class NewsletterListItem(ft.Container):
                                 newsletter.name,
                                 size=Typography.BODY_SIZE,
                                 weight=ft.FontWeight.W_500,
-                                color=Colors.Light.TEXT_PRIMARY,
+                                color=c.TEXT_PRIMARY,
                             ),
                             ft.Row(
                                 [
                                     ft.Icon(
                                         ft.Icons.LABEL_OUTLINED,
                                         size=12,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=c.TEXT_TERTIARY,
                                     ),
                                     ft.Container(width=Spacing.XXS),
                                     ft.Text(
                                         newsletter.gmail_label_name,
                                         size=Typography.CAPTION_SIZE,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=c.TEXT_TERTIARY,
                                     ),
                                     ft.Container(width=Spacing.SM),
                                     ft.Icon(
                                         ft.Icons.SCHEDULE,
                                         size=12,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=c.TEXT_TERTIARY,
                                     ),
                                     ft.Container(width=Spacing.XXS),
                                     ft.Text(
                                         auto_fetch_text,
                                         size=Typography.CAPTION_SIZE,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=c.TEXT_TERTIARY,
                                     ),
                                 ],
                                 spacing=0,
@@ -95,7 +99,7 @@ class NewsletterListItem(ft.Container):
                     # Actions
                     ft.IconButton(
                         icon=ft.Icons.EDIT_OUTLINED,
-                        icon_color=Colors.Light.TEXT_TERTIARY,
+                        icon_color=c.TEXT_TERTIARY,
                         icon_size=18,
                         tooltip="Edit",
                         style=ft.ButtonStyle(
@@ -105,7 +109,7 @@ class NewsletterListItem(ft.Container):
                     ),
                     ft.IconButton(
                         icon=ft.Icons.DELETE_OUTLINED,
-                        icon_color=Colors.Light.ERROR,
+                        icon_color=c.ERROR,
                         icon_size=18,
                         tooltip="Delete",
                         style=ft.ButtonStyle(
@@ -118,15 +122,16 @@ class NewsletterListItem(ft.Container):
             ),
             padding=Spacing.MD,
             border_radius=BorderRadius.MD,
-            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
-            bgcolor=Colors.Light.BG_PRIMARY,
+            border=ft.border.all(1, c.BORDER_DEFAULT),
+            bgcolor=c.BG_PRIMARY,
             on_hover=self._on_hover,
         )
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
+        c = self._colors
         self.border = ft.border.all(
             1,
-            Colors.Light.BORDER_STRONG if e.data == "true" else Colors.Light.BORDER_DEFAULT,
+            c.BORDER_STRONG if e.data == "true" else c.BORDER_DEFAULT,
         )
         self.update()
 
@@ -139,6 +144,9 @@ class NewslettersPage(ft.View):
         self.app = app
         self.newsletters = []
 
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
+
         self.newsletters_list = ft.ListView(
             expand=True,
             spacing=Spacing.SM,
@@ -150,7 +158,7 @@ class NewslettersPage(ft.View):
             width=20,
             height=20,
             stroke_width=2,
-            color=Colors.Light.ACCENT,
+            color=self.colors.ACCENT,
         )
 
         self.empty_state = ft.Container(
@@ -159,20 +167,20 @@ class NewslettersPage(ft.View):
                     ft.Icon(
                         ft.Icons.FOLDER_OUTLINED,
                         size=48,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self.colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.MD),
                     ft.Text(
                         "No newsletters yet",
                         size=Typography.H4_SIZE,
                         weight=ft.FontWeight.W_500,
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=self.colors.TEXT_SECONDARY,
                     ),
                     ft.Container(height=Spacing.XS),
                     ft.Text(
                         "Add a newsletter to get started",
                         size=Typography.BODY_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self.colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.LG),
                     ft.ElevatedButton(
@@ -184,7 +192,7 @@ class NewslettersPage(ft.View):
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
                         ),
-                        bgcolor=Colors.Light.ACCENT,
+                        bgcolor=self.colors.ACCENT,
                         color="#FFFFFF",
                         style=ft.ButtonStyle(
                             shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
@@ -203,6 +211,7 @@ class NewslettersPage(ft.View):
             current_route="/newsletters",
             newsletters=[],
             on_navigate=self._handle_navigate,
+            page=self.app.page,
         )
 
         self.controls = [self._build_content()]
@@ -212,6 +221,7 @@ class NewslettersPage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content with sidebar."""
+        c = self.colors  # Shorthand for readability
         return ft.Row(
             [
                 # Sidebar
@@ -226,7 +236,7 @@ class NewslettersPage(ft.View):
                                     [
                                         ft.IconButton(
                                             icon=ft.Icons.ARROW_BACK,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
@@ -240,7 +250,7 @@ class NewslettersPage(ft.View):
                                             "Manage Newsletters",
                                             size=Typography.H1_SIZE,
                                             weight=ft.FontWeight.W_600,
-                                            color=Colors.Light.TEXT_PRIMARY,
+                                            color=c.TEXT_PRIMARY,
                                         ),
                                         ft.Container(expand=True),
                                         self.loading,
@@ -253,7 +263,7 @@ class NewslettersPage(ft.View):
                                                     ft.Text("Add"),
                                                 ],
                                             ),
-                                            bgcolor=Colors.Light.ACCENT,
+                                            bgcolor=c.ACCENT,
                                             color="#FFFFFF",
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
@@ -287,7 +297,7 @@ class NewslettersPage(ft.View):
                     ),
                     padding=Spacing.LG,
                     expand=True,
-                    bgcolor=Colors.Light.BG_SECONDARY,
+                    bgcolor=c.BG_SECONDARY,
                 ),
             ],
             expand=True,
@@ -321,6 +331,7 @@ class NewslettersPage(ft.View):
                         newsletter=newsletter,
                         on_edit=self._show_edit_dialog,
                         on_delete=self._confirm_delete,
+                        colors=self.colors,
                     )
                     self.newsletters_list.controls.append(item)
             else:

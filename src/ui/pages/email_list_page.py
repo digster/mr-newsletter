@@ -11,7 +11,7 @@ from src.services.fetch_queue_service import FetchPriority
 from src.services.newsletter_service import NewsletterService
 from src.ui.components import EmailListItem, Sidebar
 from src.ui.components.dialogs import EditNewsletterDialog
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -26,20 +26,22 @@ class FilterTab(ft.Container):
         filter_key: str,
         is_active: bool = False,
         on_click=None,
+        colors=None,
     ):
         self.filter_key = filter_key
         self._on_click = on_click
+        self._colors = colors or Colors.Light
 
         super().__init__(
             content=ft.Text(
                 label,
                 size=Typography.BODY_SMALL_SIZE,
                 weight=ft.FontWeight.W_500 if is_active else ft.FontWeight.W_400,
-                color=Colors.Light.ACCENT if is_active else Colors.Light.TEXT_SECONDARY,
+                color=self._colors.ACCENT if is_active else self._colors.TEXT_SECONDARY,
             ),
             padding=ft.padding.symmetric(horizontal=Spacing.SM, vertical=Spacing.XS),
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.ACCENT_MUTED if is_active else None,
+            bgcolor=self._colors.ACCENT_MUTED if is_active else None,
             on_click=self._handle_click,
             on_hover=self._on_hover if not is_active else None,
         )
@@ -49,7 +51,7 @@ class FilterTab(ft.Container):
             self._on_click(self.filter_key)
 
     def _on_hover(self, e: ft.HoverEvent) -> None:
-        self.bgcolor = Colors.Light.HOVER if e.data == "true" else None
+        self.bgcolor = self._colors.HOVER if e.data == "true" else None
         self.update()
 
 
@@ -63,6 +65,9 @@ class EmailListPage(ft.View):
         self.newsletter = None
         self.newsletters = []
         self.current_filter = "all"  # all, unread, starred
+
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
 
         # Pagination state
         self.current_page = 1
@@ -81,20 +86,21 @@ class EmailListPage(ft.View):
             width=20,
             height=20,
             stroke_width=2,
-            color=Colors.Light.ACCENT,
+            color=self.colors.ACCENT,
         )
 
         self.title_text = ft.Text(
             "Loading...",
             size=Typography.H2_SIZE,
             weight=ft.FontWeight.W_600,
-            color=Colors.Light.TEXT_PRIMARY,
+            color=self.colors.TEXT_PRIMARY,
         )
 
         self.sidebar = Sidebar(
             current_route=f"/newsletter/{newsletter_id}",
             newsletters=[],
             on_navigate=self._handle_navigate,
+            page=self.app.page,
         )
 
         # Empty state elements (stored as instance vars for dynamic updates)
@@ -102,12 +108,12 @@ class EmailListPage(ft.View):
             "No emails yet",
             size=Typography.H4_SIZE,
             weight=ft.FontWeight.W_500,
-            color=Colors.Light.TEXT_SECONDARY,
+            color=self.colors.TEXT_SECONDARY,
         )
         self.empty_state_subheading = ft.Text(
             "Fetch emails to get started",
             size=Typography.BODY_SIZE,
-            color=Colors.Light.TEXT_TERTIARY,
+            color=self.colors.TEXT_TERTIARY,
         )
         self.empty_state_fetch_button = ft.ElevatedButton(
             content=ft.Row(
@@ -118,7 +124,7 @@ class EmailListPage(ft.View):
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
-            bgcolor=Colors.Light.ACCENT,
+            bgcolor=self.colors.ACCENT,
             color="#FFFFFF",
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
@@ -132,7 +138,7 @@ class EmailListPage(ft.View):
                     ft.Icon(
                         ft.Icons.INBOX_OUTLINED,
                         size=48,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self.colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.MD),
                     self.empty_state_heading,
@@ -150,9 +156,9 @@ class EmailListPage(ft.View):
 
         self.filter_tabs = ft.Row(
             [
-                FilterTab("All", "all", is_active=True, on_click=self._on_filter_change),
-                FilterTab("Unread", "unread", on_click=self._on_filter_change),
-                FilterTab("Starred", "starred", on_click=self._on_filter_change),
+                FilterTab("All", "all", is_active=True, on_click=self._on_filter_change, colors=self.colors),
+                FilterTab("Unread", "unread", on_click=self._on_filter_change, colors=self.colors),
+                FilterTab("Starred", "starred", on_click=self._on_filter_change, colors=self.colors),
             ],
             spacing=Spacing.XXS,
         )
@@ -160,7 +166,7 @@ class EmailListPage(ft.View):
         # Pagination controls
         self.prev_button = ft.IconButton(
             icon=ft.Icons.CHEVRON_LEFT,
-            icon_color=Colors.Light.TEXT_DISABLED,
+            icon_color=self.colors.TEXT_DISABLED,
             icon_size=20,
             disabled=True,
             tooltip="Previous page",
@@ -172,7 +178,7 @@ class EmailListPage(ft.View):
 
         self.next_button = ft.IconButton(
             icon=ft.Icons.CHEVRON_RIGHT,
-            icon_color=Colors.Light.TEXT_DISABLED,
+            icon_color=self.colors.TEXT_DISABLED,
             icon_size=20,
             disabled=True,
             tooltip="Next page",
@@ -185,7 +191,7 @@ class EmailListPage(ft.View):
         self.page_indicator = ft.Text(
             "Page 1 of 1",
             size=Typography.BODY_SMALL_SIZE,
-            color=Colors.Light.TEXT_SECONDARY,
+            color=self.colors.TEXT_SECONDARY,
         )
 
         self.pagination_controls = ft.Container(
@@ -210,6 +216,7 @@ class EmailListPage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content with sidebar."""
+        c = self.colors  # Shorthand for readability
         return ft.Row(
             [
                 # Sidebar
@@ -224,7 +231,7 @@ class EmailListPage(ft.View):
                                     [
                                         ft.IconButton(
                                             icon=ft.Icons.ARROW_BACK,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             style=ft.ButtonStyle(
                                                 shape=ft.RoundedRectangleBorder(
@@ -239,7 +246,7 @@ class EmailListPage(ft.View):
                                         self.title_text,
                                         ft.IconButton(
                                             icon=ft.Icons.EDIT_OUTLINED,
-                                            icon_color=Colors.Light.TEXT_TERTIARY,
+                                            icon_color=c.TEXT_TERTIARY,
                                             icon_size=18,
                                             tooltip="Edit newsletter",
                                             style=ft.ButtonStyle(
@@ -254,7 +261,7 @@ class EmailListPage(ft.View):
                                         ft.Container(width=Spacing.SM),
                                         ft.IconButton(
                                             icon=ft.Icons.REFRESH,
-                                            icon_color=Colors.Light.TEXT_SECONDARY,
+                                            icon_color=c.TEXT_SECONDARY,
                                             icon_size=20,
                                             tooltip="Fetch new emails",
                                             style=ft.ButtonStyle(
@@ -276,7 +283,7 @@ class EmailListPage(ft.View):
                                 padding=ft.padding.only(bottom=Spacing.MD),
                             ),
                             # Divider
-                            ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                            ft.Divider(height=1, color=c.BORDER_SUBTLE),
                             # Email list
                             ft.Container(
                                 content=ft.Stack(
@@ -295,7 +302,7 @@ class EmailListPage(ft.View):
                     ),
                     padding=Spacing.LG,
                     expand=True,
-                    bgcolor=Colors.Light.BG_SECONDARY,
+                    bgcolor=c.BG_SECONDARY,
                 ),
             ],
             expand=True,
@@ -327,15 +334,16 @@ class EmailListPage(ft.View):
         # Reset to first page when filter changes
         self.current_page = 1
         # Update tab states
+        c = self.colors
         for tab in self.filter_tabs.controls:
             is_active = tab.filter_key == filter_key
             tab.content.weight = (
                 ft.FontWeight.W_500 if is_active else ft.FontWeight.W_400
             )
             tab.content.color = (
-                Colors.Light.ACCENT if is_active else Colors.Light.TEXT_SECONDARY
+                c.ACCENT if is_active else c.TEXT_SECONDARY
             )
-            tab.bgcolor = Colors.Light.ACCENT_MUTED if is_active else None
+            tab.bgcolor = c.ACCENT_MUTED if is_active else None
             tab.on_hover = None if is_active else tab._on_hover
         self.filter_tabs.update()
         # Update empty state content for new filter
@@ -451,6 +459,7 @@ class EmailListPage(ft.View):
             on_star=lambda _, eid=email_id: self.app.page.run_task(
                 self._toggle_star, eid
             ),
+            colors=self.colors,
         )
 
     async def _on_refresh(self, e: ft.ControlEvent) -> None:
@@ -525,6 +534,7 @@ class EmailListPage(ft.View):
 
     def _update_pagination_controls(self) -> None:
         """Update pagination controls based on current state."""
+        c = self.colors
         # Update page indicator
         self.page_indicator.value = f"Page {self.current_page} of {self.total_pages}"
 
@@ -532,14 +542,14 @@ class EmailListPage(ft.View):
         can_go_prev = self.current_page > 1
         self.prev_button.disabled = not can_go_prev
         self.prev_button.icon_color = (
-            Colors.Light.TEXT_SECONDARY if can_go_prev else Colors.Light.TEXT_DISABLED
+            c.TEXT_SECONDARY if can_go_prev else c.TEXT_DISABLED
         )
 
         # Update next button
         can_go_next = self.current_page < self.total_pages
         self.next_button.disabled = not can_go_next
         self.next_button.icon_color = (
-            Colors.Light.TEXT_SECONDARY if can_go_next else Colors.Light.TEXT_DISABLED
+            c.TEXT_SECONDARY if can_go_next else c.TEXT_DISABLED
         )
 
         # Show pagination only if there are emails

@@ -84,6 +84,16 @@ class AddNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=Colors.Light.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=Colors.Light.TEXT_SECONDARY,
+            ),
+            hint_style=ft.TextStyle(
+                color=Colors.Light.TEXT_TERTIARY,
+            ),
         )
 
         self.label_dropdown = ft.Dropdown(
@@ -97,6 +107,16 @@ class AddNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=Colors.Light.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=Colors.Light.TEXT_SECONDARY,
+            ),
+            hint_style=ft.TextStyle(
+                color=Colors.Light.TEXT_TERTIARY,
+            ),
         )
 
         self.auto_fetch_switch = ft.Switch(
@@ -114,6 +134,13 @@ class AddNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=Colors.Light.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=Colors.Light.TEXT_SECONDARY,
+            ),
         )
 
         self.color_picker = GradientColorPicker()
@@ -216,6 +243,13 @@ class EditNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=Colors.Light.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=Colors.Light.TEXT_SECONDARY,
+            ),
         )
 
         self.auto_fetch_switch = ft.Switch(
@@ -233,6 +267,13 @@ class EditNewsletterDialog(ft.AlertDialog):
                 horizontal=Spacing.SM, vertical=Spacing.SM
             ),
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(
+                size=Typography.BODY_SIZE,
+                color=Colors.Light.TEXT_PRIMARY,
+            ),
+            label_style=ft.TextStyle(
+                color=Colors.Light.TEXT_SECONDARY,
+            ),
         )
 
         self.color_picker = GradientColorPicker(

@@ -12,7 +12,7 @@ from src.ui.components import Sidebar
 from src.ui.components.newsletter_list_item import NewsletterListItem
 from src.ui.components.search_bar import SearchBar
 from src.ui.components.sort_dropdown import SortDropdown
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -25,6 +25,9 @@ class HomePage(ft.View):
         super().__init__(route="/home", padding=0, spacing=0)
         self.app = app
         self.newsletters: List[Newsletter] = []
+
+        # Get theme-aware colors
+        self.colors = get_colors(self.app.page)
 
         # View state
         self.search_query = ""
@@ -41,11 +44,13 @@ class HomePage(ft.View):
         self.search_bar = SearchBar(
             placeholder="Search newsletters...",
             on_change=self._on_search_change,
+            colors=self.colors,
         )
 
         self.sort_dropdown = SortDropdown(
             current_sort=self.sort_by,
             on_change=self._on_sort_change,
+            colors=self.colors,
         )
 
         self.loading = ft.ProgressRing(
@@ -53,7 +58,7 @@ class HomePage(ft.View):
             width=20,
             height=20,
             stroke_width=2,
-            color=Colors.Light.ACCENT,
+            color=self.colors.ACCENT,
         )
 
         self.empty_state = ft.Container(
@@ -62,20 +67,20 @@ class HomePage(ft.View):
                     ft.Icon(
                         ft.Icons.INBOX_OUTLINED,
                         size=48,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self.colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.MD),
                     ft.Text(
                         "No newsletters yet",
                         size=Typography.H4_SIZE,
                         weight=ft.FontWeight.W_500,
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=self.colors.TEXT_SECONDARY,
                     ),
                     ft.Container(height=Spacing.XS),
                     ft.Text(
                         "Add a newsletter to get started",
                         size=Typography.BODY_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self.colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.LG),
                     ft.ElevatedButton(
@@ -87,7 +92,7 @@ class HomePage(ft.View):
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
                         ),
-                        bgcolor=Colors.Light.ACCENT,
+                        bgcolor=self.colors.ACCENT,
                         color="#FFFFFF",
                         style=ft.ButtonStyle(
                             shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
@@ -106,6 +111,7 @@ class HomePage(ft.View):
             current_route="/home",
             newsletters=[],
             on_navigate=self._handle_navigate,
+            page=self.app.page,
         )
 
         self.controls = [self._build_content()]
@@ -115,6 +121,7 @@ class HomePage(ft.View):
 
     def _build_content(self) -> ft.Control:
         """Build page content with sidebar."""
+        c = self.colors  # Shorthand for readability
         return ft.Row(
             [
                 # Sidebar
@@ -134,14 +141,14 @@ class HomePage(ft.View):
                                                     "Home",
                                                     size=Typography.H1_SIZE,
                                                     weight=ft.FontWeight.W_600,
-                                                    color=Colors.Light.TEXT_PRIMARY,
+                                                    color=c.TEXT_PRIMARY,
                                                 ),
                                                 ft.Container(expand=True),
                                                 self.loading,
                                                 ft.Container(width=Spacing.SM),
                                                 ft.IconButton(
                                                     icon=ft.Icons.REFRESH,
-                                                    icon_color=Colors.Light.TEXT_SECONDARY,
+                                                    icon_color=c.TEXT_SECONDARY,
                                                     icon_size=20,
                                                     tooltip="Refresh all",
                                                     style=ft.ButtonStyle(
@@ -185,7 +192,7 @@ class HomePage(ft.View):
                     ),
                     padding=Spacing.LG,
                     expand=True,
-                    bgcolor=Colors.Light.BG_SECONDARY,
+                    bgcolor=c.BG_SECONDARY,
                 ),
             ],
             expand=True,
@@ -237,6 +244,7 @@ class HomePage(ft.View):
             on_refresh=lambda _, nid=newsletter.id: self.app.page.run_task(
                 self._fetch_newsletter, nid
             ),
+            colors=self.colors,
         )
 
     async def _on_refresh_all(self, e: ft.ControlEvent) -> None:

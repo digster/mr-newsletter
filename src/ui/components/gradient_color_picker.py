@@ -323,7 +323,7 @@ class ColorPickerPopup(ft.AlertDialog):
             content=ft.Container(
                 content=self.hsv_picker,
                 padding=ft.padding.only(top=Spacing.SM),
-                height=280,  # Slider-based picker: indicator(40) + 3 sliders + hex display + spacing
+                height=330,  # Slider-based picker: indicator(40) + 3 sliders + hex display + spacing + button clearance
             ),
             actions=[
                 ft.TextButton(

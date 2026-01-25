@@ -404,3 +404,300 @@ The bundled .app works correctly on first launch but fails on subsequent launche
 - Hover adds a subtle 1px semi-transparent white border
 
 **File Changed:** `src/ui/components/sidebar.py`
+
+## Enhance Gradient Color Picker Component
+
+**Date:** 2026-01-24
+
+**Feature:** Improved the `GradientColorPicker` component with visual color swatches, colored text field backgrounds, and better UX.
+
+**Previous Behavior:**
+- Only hex text input fields (plain white backgrounds)
+- "Use solid color (clear secondary)" button
+- Preview dot not clearly showing gradient
+
+**New Behavior:**
+1. **Color Palettes:** Added 20-color clickable swatch palettes below each text field
+2. **Colored Text Fields:** Text field backgrounds display the currently selected color
+3. **Contrast Text:** Text color automatically switches between black/white based on background luminance
+4. **Removed "Clear secondary" button:** Users can still leave secondary empty for solid colors
+5. **Secondary is Optional:** Hint text updated to "(optional)" for clarity
+
+**Implementation:**
+
+1. **Added `COLOR_PALETTE` constant:** 20 vibrant colors for quick selection
+2. **Added `_get_contrast_color()` function:** Calculates relative luminance and returns black or white text
+3. **Created `_build_color_swatch()` method:** Builds 18x18px clickable color swatches
+4. **Created `_build_color_palette()` method:** Wraps swatches in a container with wrap=True
+5. **Created `_select_color()` method:** Handles swatch clicks, updates field values and styling
+6. **Updated text fields:** Added `bgcolor`, `color`, and `label_style` properties
+7. **Updated `_apply_preset()`:** Now updates text field backgrounds when preset selected
+8. **Updated `_on_primary_change()` and `_on_secondary_change()`:** Update field backgrounds on valid hex input
+9. **Updated layout:** Each color column now contains text field + palette below it
+
+**Layout Structure:**
+```
+Color & Gradient (header)
+├── Row
+│   ├── Column (Primary)
+│   │   ├── TextField (colored bgcolor)
+│   │   └── ColorPalette (20 swatches, wrapping)
+│   ├── Column (Secondary)
+│   │   ├── TextField (colored bgcolor)
+│   │   └── ColorPalette (20 swatches, wrapping)
+│   └── Column (Preview)
+│       └── Gradient dot (24px)
+├── Quick Presets (8 gradient presets)
+```
+
+**Technical Notes:**
+- Luminance formula: `(0.299 * R + 0.587 * G + 0.114 * B) / 255`
+- White text for luminance <= 0.5, black text for > 0.5
+- Swatch size: 18x18px with 4px border-radius and 4px spacing
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## HSV Color Picker Implementation
+
+**Date:** 2026-01-24
+
+**Feature:** Replaced the 20-color swatch palette with a proper HSV (Hue-Saturation-Value) color picker popup, similar to color pickers found in design tools like Figma or Photoshop.
+
+**Previous Behavior:**
+- 20 discrete color swatches below each color text field
+- Limited color selection to predefined palette
+- Always visible, taking up significant dialog space
+
+**New Behavior:**
+1. **Compact Color Fields:** Clickable color boxes showing current color and hex value
+2. **Popup Color Picker:** Opens when clicking a color field, containing:
+   - 140x140px Saturation/Value square
+   - 20x140px vertical Hue slider (rainbow gradient)
+   - Real-time hex value display
+   - Done/Cancel buttons
+3. **Clear Button:** Secondary color has an X button to clear for solid color mode
+
+**HSV Color Model:**
+- **Hue (H):** 0-360° determines base color (red→yellow→green→cyan→blue→magenta→red)
+- **Saturation (S):** 0-100% determines color intensity (gray to pure color)
+- **Value (V):** 0-100% determines brightness (black to full brightness)
+
+**Technical Implementation:**
+
+1. **HSV Conversion Functions:**
+   - `_hsv_to_hex(h, s, v)`: Uses Python's `colorsys.hsv_to_rgb()` to convert HSV to hex
+   - `_hex_to_hsv(hex_color)`: Uses `colorsys.rgb_to_hsv()` to convert hex to HSV
+
+2. **SV Square Gradient Layering:** Three overlapping containers create the classic color picker square:
+   - Base layer: Solid color at current hue (H at 100% S, 100% V)
+   - Middle layer: White→transparent horizontal gradient (saturation axis)
+   - Top layer: Transparent→black vertical gradient (value axis)
+
+3. **Gesture Handling:**
+   - `ft.GestureDetector` wraps both SV square and hue slider
+   - `on_tap_down`: Jump to clicked position
+   - `on_pan_start`/`on_pan_update`: Drag to adjust values
+   - Delta tracking for smooth dragging (Flet provides deltas, not absolute positions)
+
+4. **New Classes:**
+   - `HSVColorPicker`: The picker with SV square, hue slider, and hex display
+   - `ColorPickerPopup`: AlertDialog wrapper with Done/Cancel actions
+   - `ColorField`: Clickable color box that opens the popup
+
+5. **Preserved Functionality:**
+   - Quick presets still work and update color fields
+   - Preview dot shows gradient/solid correctly
+   - `get_colors()` API unchanged for dialog integration
+
+**Layout Structure (Popup):**
+```
+┌─────────────────────────────────┐
+│ Choose Color (title)            │
+├─────────────────────────────────┤
+│ ┌─────────────┐  ┌──┐           │
+│ │             │  │  │           │
+│ │  SV Square  │  │H │           │
+│ │   140x140   │  │u │           │
+│ │             │  │e │           │
+│ └─────────────┘  └──┘           │
+│                                 │
+│ ┌─────────────────────────────┐ │
+│ │        #FF6B6B              │ │
+│ └─────────────────────────────┘ │
+│                                 │
+│              [Cancel] [Done]    │
+└─────────────────────────────────┘
+```
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Fix HSV Color Picker Bugs
+
+**Date:** 2026-01-24
+
+**Issues:**
+1. `'TapEvent' object has no attribute 'local_y'` error when clicking/dragging in the color picker
+2. Color picker popup takes full screen height instead of fitting content
+
+**Root Causes:**
+
+1. **Wrong Event Property Access:** The code used `e.local_x` and `e.local_y` directly, but Flet's event objects (`TapEvent`, `DragStartEvent`) use `e.local_position` which is an `Offset` object with `.x` and `.y` properties.
+
+2. **Dialog Expanding:** The `AlertDialog` content container had no height constraint, causing it to expand to fill available space.
+
+**Solution:**
+
+1. **Fixed event property access in 4 methods:**
+   - `_on_sv_tap()`: `e.local_x, e.local_y` → `e.local_position.x, e.local_position.y`
+   - `_on_sv_pan_start()`: `e.local_x, e.local_y` → `e.local_position.x, e.local_position.y`
+   - `_on_hue_tap()`: `e.local_y` → `e.local_position.y`
+   - `_on_hue_pan_start()`: `e.local_y` → `e.local_position.y`
+
+2. **Constrained dialog height:** Added `height=220` to the `ColorPickerPopup` content container (SV_SIZE(140) + spacing(12) + hex_display(~40) + padding)
+
+**Technical Note:** Flet's gesture event API mirrors Flutter's, where position data is encapsulated in `Offset` objects rather than exposed as direct properties. The `local_position` gives coordinates relative to the widget, while `global_position` gives screen coordinates.
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Fix HSV Color Picker Bugs - Round 2
+
+**Date:** 2026-01-24
+
+**Issues:**
+1. `'DragUpdateEvent' object has no attribute 'delta_y'` error when dragging in the color picker
+2. Hue slider not updating SV square - changing hue doesn't update the main square's base color visually
+
+**Root Causes:**
+
+1. **Wrong DragUpdateEvent Property Access:** Similar to the TapEvent/DragStartEvent fixes, `DragUpdateEvent` also uses an `Offset` object for delta values. The code used `e.delta_x` and `e.delta_y` directly, but Flet uses `e.delta` which is an `Offset` with `.x` and `.y` properties.
+
+2. **SV Square Base Color Not Updating:** The `_update_hue_from_position` method sets `self._sv_base.bgcolor` but the visual doesn't update. This is because `self.update()` updates the HSVColorPicker column, but `_sv_base` is deeply nested inside GestureDetector → Container → Stack. Need to explicitly update `_sv_base` or the Stack.
+
+**Solution:**
+
+1. **Fixed `_on_sv_pan_update()` method:**
+   - `e.delta_x` → `e.delta.x`
+   - `e.delta_y` → `e.delta.y`
+
+2. **Fixed `_on_hue_pan_update()` method:**
+   - `e.delta_y` → `e.delta.y`
+
+3. **Fixed `_update_hue_from_position()` method:**
+   - Added `self._sv_base.update()` call before `self.update()` to explicitly update the nested base container
+
+**Technical Note:** In Flet, when updating properties on deeply nested controls, calling `update()` on the parent container may not propagate to all children. For controls that are part of a `Stack` or nested inside `GestureDetector` → `Container` hierarchies, explicit `update()` calls on the specific control are needed.
+
+**Flet Event API Pattern:**
+- `TapEvent`: `e.local_position.x`, `e.local_position.y`
+- `DragStartEvent`: `e.local_position.x`, `e.local_position.y`
+- `DragUpdateEvent`: `e.delta.x`, `e.delta.y` (delta, not position)
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Fix HSV Color Picker Bugs - Round 3
+
+**Date:** 2026-01-24
+
+**Issues:**
+1. `'DragUpdateEvent' object has no attribute 'delta'` error - dragging in color picker still errors
+2. SV square background not updating visually when hue changes - hex value updates but the square stays at initial color
+
+**Root Causes:**
+
+1. **Wrong DragUpdateEvent Property Name:** The Flet `DragUpdateEvent` uses `local_delta` (not `delta`, `delta_x`, or `delta_y`). The `local_delta` is an `Offset` object with `.x` and `.y` properties.
+
+2. **SV Stack Not Repainting:** Calling `self._sv_base.update()` doesn't force a visual repaint because `_sv_base` is inside a Stack with overlay gradients. The entire Stack needs to be updated for the change to propagate visually.
+
+**Solution:**
+
+1. **Fixed `_on_sv_pan_update()` method:**
+   - `e.delta.x` → `e.local_delta.x`
+   - `e.delta.y` → `e.local_delta.y`
+
+2. **Fixed `_on_hue_pan_update()` method:**
+   - `e.delta.y` → `e.local_delta.y`
+
+3. **Store reference to SV Stack:**
+   - Added `self._sv_stack = None` in `__init__`
+   - In `_build_sv_square()`, store the Stack as `self._sv_stack` before wrapping in GestureDetector
+   - Changed `_update_hue_from_position()` to call `self._sv_stack.update()` instead of `self._sv_base.update()`
+
+**Flet DragUpdateEvent API:**
+- `e.local_delta` - Movement delta in local coordinates (Offset with .x, .y)
+- `e.global_delta` - Movement delta in global coordinates
+- `e.local_position` - Current position in local coordinates
+- `e.global_position` - Current position in global coordinates
+
+**Technical Note:** When a child control's property changes (like `_sv_base.bgcolor`), updating just that child may not trigger a repaint if it's part of a Stack. The Stack manages the layering/compositing, so updating the Stack ensures all layers are re-rendered with the new base color visible through the transparent gradients.
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`
+
+## Replace HSV SV Square with Slider-Based Picker
+
+**Date:** 2026-01-24
+
+**Issue:** The SV (Saturation/Value) square in the HSV color picker has a rendering bug where the base color layer doesn't update visually when the hue changes. After 7+ failed attempts to fix this (different update methods, replacing controls, gradient layers, removing clip_behavior), we determined this is a fundamental Flet/Flutter issue with layered Containers inside Stacks.
+
+**Failed Approaches:**
+1. Round 1-4: `bgcolor` + various `update()` calls
+2. Round 5: Replacing Container in `Stack.controls[0]`
+3. Round 6: Using `LinearGradient` instead of `bgcolor`
+4. Round 7: Removing `clip_behavior`
+
+**Root Cause:** Flet/Flutter has rendering cache issues when updating overlapping Containers in Stacks. The gradient layers on top of the base color prevent proper visual updates even when the underlying control's properties change and `update()` is called.
+
+**Solution:** Replaced the SV square + hue slider design with a simpler **3-slider approach**:
+- **Hue slider:** 0-360 degrees, controls base color
+- **Saturation slider:** 0-100%, controls color intensity
+- **Brightness slider:** 0-100%, controls light/dark
+
+This approach uses native Flet `Slider` components which don't have the Stack rendering issues because they're self-contained widgets that manage their own rendering.
+
+**Implementation:**
+
+1. **Replaced `HSVColorPicker` class** with slider-based design:
+   - 3 labeled sliders (Hue, Saturation, Brightness)
+   - Color indicator bar at top showing current color
+   - Hex value display at bottom
+   - Slider colors update dynamically to reflect current values
+
+2. **Updated `ColorPickerPopup`:**
+   - Increased content height from 220 to 280 to accommodate 3 sliders
+
+3. **Attempted `flet-color-selector` package first:**
+   - Package uses deprecated `UserControl` class
+   - Incompatible with Flet 0.80+ (uses `BaseControl` now)
+   - Removed package, implemented slider approach directly
+
+**UI Layout:**
+```
+┌────────────────────────────────────┐
+│ Choose Color                       │
+├────────────────────────────────────┤
+│ ┌──────────────────────────────┐   │
+│ │    Color Indicator Bar       │   │
+│ └──────────────────────────────┘   │
+│                                    │
+│ Hue                                │
+│ ─────────●─────────────────        │
+│                                    │
+│ Saturation                         │
+│ ────────────────●──────────        │
+│                                    │
+│ Brightness                         │
+│ ──────────────────────●────        │
+│                                    │
+│ ┌──────────────────────────────┐   │
+│ │         #FF6B6B              │   │
+│ └──────────────────────────────┘   │
+│                    [Cancel] [Done] │
+└────────────────────────────────────┘
+```
+
+**Key Technical Notes:**
+- Native sliders avoid Stack layering entirely
+- Each slider independently updates without complex state
+- Color indicator is a simple Container with `bgcolor` - no overlays
+- Slider thumb/active colors update to match current HSV values for visual feedback
+
+**File Changed:** `src/ui/components/gradient_color_picker.py`

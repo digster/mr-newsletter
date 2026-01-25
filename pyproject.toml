@@ -11,35 +11,28 @@ dependencies = [
     # UI Framework
     "flet[all]>=0.80.0",
     "flet-webview>=0.1.0",
-
     # Google APIs
     "google-api-python-client>=2.150.0",
     "google-auth-httplib2>=0.2.0",
     "google-auth-oauthlib>=1.2.0",
-
     # Database
     "sqlalchemy>=2.0.35",
     "asyncpg>=0.30.0",
     "psycopg2-binary>=2.9.9",
     "aiosqlite>=0.20.0",
     "alembic>=1.14.0",
-
     # Background Tasks
     "apscheduler>=3.10.4",
-
     # Configuration & Validation
     "pydantic>=2.9.0",
     "pydantic-settings>=2.6.0",
     "python-dotenv>=1.0.1",
-
     # Security
     "cryptography>=43.0.0",
-
     # HTML Processing
     "bleach[css]>=6.0.0",
     "beautifulsoup4>=4.12.3",
     "html2text>=2024.2.26",
-
     # HTTP Client
     "httpx>=0.28.0",
 ]

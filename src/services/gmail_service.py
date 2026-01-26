@@ -12,6 +12,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from src.utils.html_sanitizer import html_to_plain_text
+
 logger = logging.getLogger(__name__)
 
 
@@ -278,6 +280,13 @@ class GmailService:
                 process_part(sub_part)
 
         process_part(payload)
+
+        # Fallback: convert HTML to plain text if no text/plain part available
+        # This ensures body_text is populated for HTML-only emails (common in newsletters)
+        if not body_text and body_html:
+            body_text = html_to_plain_text(body_html)
+            logger.debug("Converted HTML to plain text for email processing")
+
         return body_text, body_html
 
     def get_message_count_for_label(self, label_id: str) -> int:

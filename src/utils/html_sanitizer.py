@@ -3,6 +3,7 @@
 from typing import Optional
 
 import bleach
+import html2text
 from bleach.css_sanitizer import CSSSanitizer
 
 # Allowed HTML tags for email content
@@ -276,3 +277,25 @@ def sanitize_html_for_webview(html_content: Optional[str]) -> str:
         )
 
     return result
+
+
+def html_to_plain_text(html_content: Optional[str]) -> str:
+    """Convert HTML to plain text for LLM processing.
+
+    Uses html2text to convert HTML to readable plain text while
+    preserving link URLs and basic structure.
+
+    Args:
+        html_content: Raw HTML content from email.
+
+    Returns:
+        Plain text representation of the HTML content.
+    """
+    if not html_content:
+        return ""
+
+    h = html2text.HTML2Text()
+    h.ignore_links = False  # Keep link URLs
+    h.ignore_images = True  # Skip image alt text clutter
+    h.body_width = 0  # No line wrapping
+    return h.handle(html_content).strip()

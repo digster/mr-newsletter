@@ -10,6 +10,7 @@ from src.models.user_settings import UserSettings
 from src.repositories.email_repository import EmailRepository
 from src.repositories.newsletter_repository import NewsletterRepository
 from src.services.llm_service import LLMService, get_current_timestamp
+from src.utils.html_sanitizer import html_to_plain_text
 
 logger = logging.getLogger(__name__)
 
@@ -337,10 +338,22 @@ class EmailService:
         if not llm_service.is_enabled():
             return None, "AI summarization is disabled. Enable it in Settings."
 
+        # Fallback: convert HTML to text if body_text is empty
+        # This handles existing emails synced before the HTML->text extraction fix
+        body_text = email.body_text
+        if not body_text or not body_text.strip():
+            if email.body_html:
+                logger.debug(
+                    f"Email {email_id} has no body_text, converting HTML to text"
+                )
+                body_text = html_to_plain_text(email.body_html)
+            else:
+                body_text = ""
+
         # Generate summary
         result = await llm_service.summarize_email(
             subject=email.subject,
-            body_text=email.body_text or "",
+            body_text=body_text,
             sender_name=email.sender_name,
         )
 

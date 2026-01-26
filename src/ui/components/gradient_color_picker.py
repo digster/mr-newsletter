@@ -7,7 +7,7 @@ from typing import Callable, Optional, Tuple
 
 import flet as ft
 
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 
 # Preset gradient combinations for quick selection
@@ -88,13 +88,16 @@ class HSVColorPicker(ft.Column):
         self,
         initial_color: str,
         on_change: Optional[Callable[[str], None]] = None,
+        colors=None,
     ):
         """Initialize HSV color picker.
 
         Args:
             initial_color: Initial hex color.
             on_change: Callback when color changes.
+            colors: Theme colors class (Colors.Light or Colors.Dark).
         """
+        self._colors = colors or Colors.Light
         self._on_change = on_change
         self._hue, self._sat, self._val = _hex_to_hsv(initial_color)
 
@@ -138,7 +141,7 @@ class HSVColorPicker(ft.Column):
             height=40,
             bgcolor=current_color,
             border_radius=BorderRadius.SM,
-            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+            border=ft.border.all(1, self._colors.BORDER_DEFAULT),
         )
 
     def _build_hue_slider(self) -> ft.Slider:
@@ -149,7 +152,7 @@ class HSVColorPicker(ft.Column):
             value=self._hue,
             active_color=_hsv_to_hex(self._hue, 1, 1),
             thumb_color=_hsv_to_hex(self._hue, 1, 1),
-            inactive_color=Colors.Light.BORDER_DEFAULT,
+            inactive_color=self._colors.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_hue_change,
             on_change_end=self._on_hue_change_end,
@@ -163,7 +166,7 @@ class HSVColorPicker(ft.Column):
             value=self._sat * 100,
             active_color=_hsv_to_hex(self._hue, self._sat, 1),
             thumb_color=_hsv_to_hex(self._hue, self._sat, 1),
-            inactive_color=Colors.Light.BORDER_DEFAULT,
+            inactive_color=self._colors.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_sat_change,
             on_change_end=self._on_sat_change_end,
@@ -177,7 +180,7 @@ class HSVColorPicker(ft.Column):
             value=self._val * 100,
             active_color=_hsv_to_hex(self._hue, self._sat, self._val),
             thumb_color=_hsv_to_hex(self._hue, self._sat, self._val),
-            inactive_color=Colors.Light.BORDER_DEFAULT,
+            inactive_color=self._colors.BORDER_DEFAULT,
             width=self.SLIDER_WIDTH,
             on_change=self._on_val_change,
             on_change_end=self._on_val_change_end,
@@ -190,7 +193,7 @@ class HSVColorPicker(ft.Column):
                 ft.Text(
                     label,
                     size=Typography.CAPTION_SIZE,
-                    color=Colors.Light.TEXT_TERTIARY,
+                    color=self._colors.TEXT_TERTIARY,
                 ),
                 slider,
             ],
@@ -211,7 +214,7 @@ class HSVColorPicker(ft.Column):
             ),
             bgcolor=current_color,
             border_radius=BorderRadius.SM,
-            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+            border=ft.border.all(1, self._colors.BORDER_DEFAULT),
             padding=ft.padding.symmetric(horizontal=Spacing.MD, vertical=Spacing.XS),
             width=self.SLIDER_WIDTH,
             alignment=ft.alignment.Alignment(0, 0),
@@ -337,6 +340,7 @@ class ColorPickerPopup(ft.AlertDialog):
         initial_color: str,
         on_select: Callable[[str], None],
         on_cancel: Optional[Callable[[], None]] = None,
+        colors=None,
     ):
         """Initialize color picker popup.
 
@@ -344,7 +348,9 @@ class ColorPickerPopup(ft.AlertDialog):
             initial_color: Initial hex color.
             on_select: Callback when "Done" is clicked with selected color.
             on_cancel: Callback when "Cancel" is clicked.
+            colors: Theme colors class (Colors.Light or Colors.Dark).
         """
+        self._colors = colors or Colors.Light
         self._initial_color = initial_color
         self._on_select = on_select
         self._on_cancel = on_cancel
@@ -353,6 +359,7 @@ class ColorPickerPopup(ft.AlertDialog):
         self.hsv_picker = HSVColorPicker(
             initial_color=initial_color,
             on_change=self._on_color_change,
+            colors=self._colors,
         )
 
         super().__init__(
@@ -375,7 +382,7 @@ class ColorPickerPopup(ft.AlertDialog):
                 ft.ElevatedButton(
                     "Done",
                     on_click=self._handle_done,
-                    bgcolor=Colors.Light.ACCENT,
+                    bgcolor=self._colors.ACCENT,
                     color="#FFFFFF",
                 ),
             ],
@@ -411,6 +418,7 @@ class ColorField(ft.Container):
         color: str,
         on_change: Callable[[str], None],
         allow_clear: bool = False,
+        colors=None,
     ):
         """Initialize color field.
 
@@ -419,7 +427,9 @@ class ColorField(ft.Container):
             color: Current hex color.
             on_change: Callback when color changes.
             allow_clear: Whether to show clear button.
+            colors: Theme colors class (Colors.Light or Colors.Dark).
         """
+        self._colors = colors or Colors.Light
         self._label = label
         self._color = color
         self._on_change = on_change
@@ -438,7 +448,7 @@ class ColorField(ft.Container):
                     ft.Text(
                         label,
                         size=Typography.CAPTION_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.XXS),
                     ft.Row(
@@ -453,15 +463,15 @@ class ColorField(ft.Container):
     def _build_color_box(self) -> ft.Container:
         """Build the clickable color display box."""
         has_color = self._color and _is_valid_hex(self._color)
-        text_color = _get_contrast_color(self._color) if has_color else Colors.Light.TEXT_TERTIARY
+        text_color = _get_contrast_color(self._color) if has_color else self._colors.TEXT_TERTIARY
         display_text = self._color.upper() if has_color else "None"
 
         return ft.Container(
             width=90,
             height=36,
-            bgcolor=self._color if has_color else Colors.Light.BG_SECONDARY,
+            bgcolor=self._color if has_color else self._colors.BG_SECONDARY,
             border_radius=BorderRadius.SM,
-            border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+            border=ft.border.all(1, self._colors.BORDER_DEFAULT),
             content=ft.Text(
                 display_text,
                 size=Typography.CAPTION_SIZE,
@@ -479,12 +489,12 @@ class ColorField(ft.Container):
             content=ft.Icon(
                 ft.Icons.CLOSE,
                 size=14,
-                color=Colors.Light.TEXT_TERTIARY,
+                color=self._colors.TEXT_TERTIARY,
             ),
             width=24,
             height=24,
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_SECONDARY,
+            bgcolor=self._colors.BG_SECONDARY,
             alignment=ft.alignment.Alignment(0, 0),
             on_click=self._clear_color,
             tooltip="Clear color",
@@ -497,6 +507,7 @@ class ColorField(ft.Container):
         popup = ColorPickerPopup(
             initial_color=initial,
             on_select=self._on_color_selected,
+            colors=self._colors,
         )
         self.page.show_dialog(popup)
 
@@ -515,10 +526,10 @@ class ColorField(ft.Container):
     def _update_display(self) -> None:
         """Update the color box display."""
         has_color = self._color and _is_valid_hex(self._color)
-        text_color = _get_contrast_color(self._color) if has_color else Colors.Light.TEXT_TERTIARY
+        text_color = _get_contrast_color(self._color) if has_color else self._colors.TEXT_TERTIARY
         display_text = self._color.upper() if has_color else "None"
 
-        self._color_box.bgcolor = self._color if has_color else Colors.Light.BG_SECONDARY
+        self._color_box.bgcolor = self._color if has_color else self._colors.BG_SECONDARY
         self._color_box.content.value = display_text
         self._color_box.content.color = text_color
 
@@ -546,6 +557,7 @@ class GradientColorPicker(ft.Container):
         initial_color: Optional[str] = None,
         initial_color_secondary: Optional[str] = None,
         on_change: Optional[Callable[[str, Optional[str]], None]] = None,
+        colors=None,
     ):
         """Initialize gradient color picker.
 
@@ -553,9 +565,11 @@ class GradientColorPicker(ft.Container):
             initial_color: Initial primary color.
             initial_color_secondary: Initial secondary color for gradient.
             on_change: Callback when colors change (color, color_secondary).
+            colors: Theme colors class (Colors.Light or Colors.Dark).
         """
+        self._colors = colors or Colors.Light
         self._on_change = on_change
-        self._color = initial_color or Colors.Light.ACCENT
+        self._color = initial_color or self._colors.ACCENT
         self._color_secondary = initial_color_secondary
 
         # Color fields
@@ -564,6 +578,7 @@ class GradientColorPicker(ft.Container):
             color=self._color,
             on_change=self._on_primary_change,
             allow_clear=False,
+            colors=self._colors,
         )
 
         self.secondary_field = ColorField(
@@ -571,6 +586,7 @@ class GradientColorPicker(ft.Container):
             color=self._color_secondary,
             on_change=self._on_secondary_change,
             allow_clear=True,
+            colors=self._colors,
         )
 
         # Preview dot
@@ -587,7 +603,7 @@ class GradientColorPicker(ft.Container):
                         "Color & Gradient",
                         size=Typography.CAPTION_SIZE,
                         weight=ft.FontWeight.W_500,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.XS),
                     # Color fields with preview
@@ -603,7 +619,7 @@ class GradientColorPicker(ft.Container):
                                     ft.Text(
                                         "Preview",
                                         size=Typography.CAPTION_SIZE,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=self._colors.TEXT_TERTIARY,
                                     ),
                                     ft.Container(height=Spacing.XXS),
                                     self.preview,
@@ -619,7 +635,7 @@ class GradientColorPicker(ft.Container):
                     ft.Text(
                         "Quick Presets",
                         size=Typography.CAPTION_SIZE,
-                        color=Colors.Light.TEXT_TERTIARY,
+                        color=self._colors.TEXT_TERTIARY,
                     ),
                     ft.Container(height=Spacing.XXS),
                     self.presets_row,
@@ -641,15 +657,15 @@ class GradientColorPicker(ft.Container):
                     end=ft.Alignment(1, 1),
                     colors=[self._color, self._color_secondary],
                 ),
-                border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+                border=ft.border.all(1, self._colors.BORDER_DEFAULT),
             )
         else:
             return ft.Container(
                 width=32,
                 height=32,
                 border_radius=BorderRadius.FULL,
-                bgcolor=self._color if _is_valid_hex(self._color) else Colors.Light.ACCENT,
-                border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+                bgcolor=self._color if _is_valid_hex(self._color) else self._colors.ACCENT,
+                border=ft.border.all(1, self._colors.BORDER_DEFAULT),
             )
 
     def _build_presets_row(self) -> ft.Row:
@@ -665,7 +681,7 @@ class GradientColorPicker(ft.Container):
                     end=ft.Alignment(1, 1),
                     colors=[primary, secondary],
                 ),
-                border=ft.border.all(1, Colors.Light.BORDER_DEFAULT),
+                border=ft.border.all(1, self._colors.BORDER_DEFAULT),
                 on_click=lambda _, p=primary, s=secondary: self._apply_preset(p, s),
                 tooltip=f"{primary} to {secondary}",
             )

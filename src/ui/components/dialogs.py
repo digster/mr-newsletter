@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 import flet as ft
 
 from src.ui.components.gradient_color_picker import GradientColorPicker
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography
+from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 
 class ConfirmDialog(ft.AlertDialog):
@@ -232,8 +232,10 @@ class EditNewsletterDialog(ft.AlertDialog):
         newsletter,
         on_save: Optional[Callable] = None,
         on_cancel: Optional[Callable] = None,
+        page: Optional["ft.Page"] = None,
     ):
         self.newsletter = newsletter
+        colors = get_colors(page)
 
         self.name_field = ft.TextField(
             label="Newsletter Name",
@@ -245,17 +247,17 @@ class EditNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             label_style=ft.TextStyle(
-                color=Colors.Light.TEXT_SECONDARY,
+                color=colors.TEXT_SECONDARY,
             ),
         )
 
         self.auto_fetch_switch = ft.Switch(
             label="Auto-fetch enabled",
             value=newsletter.auto_fetch_enabled,
-            active_color=Colors.Light.ACCENT,
+            active_color=colors.ACCENT,
         )
 
         self.interval_field = ft.TextField(
@@ -269,16 +271,17 @@ class EditNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             label_style=ft.TextStyle(
-                color=Colors.Light.TEXT_SECONDARY,
+                color=colors.TEXT_SECONDARY,
             ),
         )
 
         self.color_picker = GradientColorPicker(
             initial_color=newsletter.color,
             initial_color_secondary=newsletter.color_secondary,
+            colors=colors,
         )
 
         super().__init__(
@@ -286,7 +289,7 @@ class EditNewsletterDialog(ft.AlertDialog):
                 "Edit Newsletter",
                 size=Typography.H3_SIZE,
                 weight=ft.FontWeight.W_600,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             content=ft.Container(
                 content=ft.Column(
@@ -298,37 +301,37 @@ class EditNewsletterDialog(ft.AlertDialog):
                                     ft.Icon(
                                         ft.Icons.LABEL_OUTLINED,
                                         size=16,
-                                        color=Colors.Light.TEXT_TERTIARY,
+                                        color=colors.TEXT_TERTIARY,
                                     ),
                                     ft.Container(width=Spacing.XS),
                                     ft.Text(
                                         newsletter.gmail_label_name,
                                         size=Typography.BODY_SMALL_SIZE,
-                                        color=Colors.Light.TEXT_SECONDARY,
+                                        color=colors.TEXT_SECONDARY,
                                     ),
                                 ],
                             ),
-                            bgcolor=Colors.Light.BG_TERTIARY,
+                            bgcolor=colors.BG_TERTIARY,
                             padding=ft.padding.all(Spacing.SM),
                             border_radius=BorderRadius.SM,
                         ),
                         ft.Container(height=Spacing.MD),
                         self.name_field,
                         ft.Container(height=Spacing.MD),
-                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Divider(height=1, color=colors.BORDER_SUBTLE),
                         ft.Container(height=Spacing.MD),
                         ft.Text(
                             "Auto-fetch settings",
                             size=Typography.CAPTION_SIZE,
                             weight=ft.FontWeight.W_500,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=colors.TEXT_TERTIARY,
                         ),
                         ft.Container(height=Spacing.XS),
                         self.auto_fetch_switch,
                         ft.Container(height=Spacing.SM),
                         self.interval_field,
                         ft.Container(height=Spacing.MD),
-                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Divider(height=1, color=colors.BORDER_SUBTLE),
                         ft.Container(height=Spacing.MD),
                         self.color_picker,
                     ],
@@ -342,7 +345,7 @@ class EditNewsletterDialog(ft.AlertDialog):
                 ft.TextButton(
                     "Cancel",
                     style=ft.ButtonStyle(
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=colors.TEXT_SECONDARY,
                         padding=ft.padding.symmetric(
                             horizontal=Spacing.MD, vertical=Spacing.XS
                         ),
@@ -351,7 +354,7 @@ class EditNewsletterDialog(ft.AlertDialog):
                 ),
                 ft.ElevatedButton(
                     "Save Changes",
-                    bgcolor=Colors.Light.ACCENT,
+                    bgcolor=colors.ACCENT,
                     color="#FFFFFF",
                     style=ft.ButtonStyle(
                         padding=ft.padding.symmetric(

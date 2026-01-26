@@ -456,6 +456,7 @@ class NewslettersPage(ft.View):
             newsletter=newsletter,
             on_save=lambda e: self.app.page.run_task(save_changes, e),
             on_cancel=close_dialog,
+            page=self.app.page,
         )
 
         self.app.page.show_dialog(dialog)

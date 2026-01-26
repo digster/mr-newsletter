@@ -84,6 +84,7 @@ class SettingsPage(ft.View):
             hint_text="http://localhost:1234/v1",
             border_radius=BorderRadius.SM,
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(size=Typography.BODY_SIZE, color=c.TEXT_PRIMARY),
             label_style=ft.TextStyle(color=c.TEXT_SECONDARY),
             on_blur=lambda e: self.app.page.run_task(self._on_llm_url_change, e),
         )
@@ -95,6 +96,7 @@ class SettingsPage(ft.View):
             hint_text="Leave empty for LM Studio",
             border_radius=BorderRadius.SM,
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(size=Typography.BODY_SIZE, color=c.TEXT_PRIMARY),
             label_style=ft.TextStyle(color=c.TEXT_SECONDARY),
             on_blur=lambda e: self.app.page.run_task(self._on_api_key_change, e),
         )
@@ -104,6 +106,7 @@ class SettingsPage(ft.View):
             hint_text="Leave empty for server default",
             border_radius=BorderRadius.SM,
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(size=Typography.BODY_SIZE, color=c.TEXT_PRIMARY),
             label_style=ft.TextStyle(color=c.TEXT_SECONDARY),
             on_blur=lambda e: self.app.page.run_task(self._on_llm_model_change, e),
         )
@@ -115,6 +118,7 @@ class SettingsPage(ft.View):
             keyboard_type=ft.KeyboardType.NUMBER,
             border_radius=BorderRadius.SM,
             text_size=Typography.BODY_SIZE,
+            text_style=ft.TextStyle(size=Typography.BODY_SIZE, color=c.TEXT_PRIMARY),
             label_style=ft.TextStyle(color=c.TEXT_SECONDARY),
             on_blur=lambda e: self.app.page.run_task(self._on_max_tokens_change, e),
         )

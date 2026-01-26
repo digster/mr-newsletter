@@ -45,6 +45,7 @@ class EmailService:
         offset: int = 0,
         unread_only: bool = False,
         starred_only: bool = False,
+        archived_only: bool = False,
     ) -> Sequence[Email]:
         """Get emails for a newsletter.
 
@@ -54,6 +55,7 @@ class EmailService:
             offset: Number of emails to skip.
             unread_only: Only return unread emails.
             starred_only: Only return starred emails.
+            archived_only: Only return archived emails.
 
         Returns:
             List of emails.
@@ -64,6 +66,7 @@ class EmailService:
             offset=offset,
             unread_only=unread_only,
             starred_only=starred_only,
+            archived_only=archived_only,
         )
 
     async def mark_as_read(self, email_id: int) -> Optional[Email]:
@@ -126,6 +129,21 @@ class EmailService:
             await self.session.commit()
         return email
 
+    async def unarchive_email(self, email_id: int) -> Optional[Email]:
+        """Unarchive an email and update newsletter count.
+
+        Args:
+            email_id: Email ID.
+
+        Returns:
+            Updated email if found.
+        """
+        email = await self.email_repo.unarchive(email_id)
+        if email:
+            await self._update_newsletter_count(email.newsletter_id)
+            await self.session.commit()
+        return email
+
     async def search_emails(
         self,
         newsletter_id: int,
@@ -181,11 +199,23 @@ class EmailService:
         """
         return await self.email_repo.get_starred_count(newsletter_id)
 
+    async def get_archived_count(self, newsletter_id: int) -> int:
+        """Get archived email count for newsletter.
+
+        Args:
+            newsletter_id: Newsletter ID.
+
+        Returns:
+            Archived count.
+        """
+        return await self.email_repo.get_archived_count(newsletter_id)
+
     async def get_filtered_count(
         self,
         newsletter_id: int,
         unread_only: bool = False,
         starred_only: bool = False,
+        archived_only: bool = False,
     ) -> int:
         """Get email count with filters applied.
 
@@ -193,11 +223,14 @@ class EmailService:
             newsletter_id: Newsletter ID.
             unread_only: Only count unread emails.
             starred_only: Only count starred emails.
+            archived_only: Only count archived emails.
 
         Returns:
             Filtered count.
         """
-        if starred_only:
+        if archived_only:
+            return await self.email_repo.get_archived_count(newsletter_id)
+        elif starred_only:
             return await self.email_repo.get_starred_count(newsletter_id)
         elif unread_only:
             return await self.email_repo.get_unread_count(newsletter_id)

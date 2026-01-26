@@ -55,6 +55,7 @@ class EmailRepository(BaseRepository[Email]):
         offset: int = 0,
         unread_only: bool = False,
         starred_only: bool = False,
+        archived_only: bool = False,
     ) -> Sequence[Email]:
         """Get emails for a newsletter.
 
@@ -64,6 +65,7 @@ class EmailRepository(BaseRepository[Email]):
             offset: Number of emails to skip.
             unread_only: If True, only return unread emails.
             starred_only: If True, only return starred emails.
+            archived_only: If True, only return archived emails.
 
         Returns:
             List of emails.
@@ -71,11 +73,16 @@ class EmailRepository(BaseRepository[Email]):
         query = (
             select(Email)
             .where(Email.newsletter_id == newsletter_id)
-            .where(Email.is_archived== False)  # noqa: E712 Non-archived emails
             .order_by(desc(Email.received_at))
             .limit(limit)
             .offset(offset)
         )
+
+        # Filter by archive status
+        if archived_only:
+            query = query.where(Email.is_archived.is_(True))
+        else:
+            query = query.where(Email.is_archived== False)  # noqa: E712 Non-archived emails
 
         if unread_only:
             query = query.where(Email.is_read== False)  # noqa: E712 Unread emails
@@ -139,6 +146,23 @@ class EmailRepository(BaseRepository[Email]):
         )
         return result.scalar() or 0
 
+    async def get_archived_count(self, newsletter_id: int) -> int:
+        """Get count of archived emails for a newsletter.
+
+        Args:
+            newsletter_id: Newsletter ID.
+
+        Returns:
+            Count of archived emails.
+        """
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(Email)
+            .where(Email.newsletter_id == newsletter_id)
+            .where(Email.is_archived.is_(True))
+        )
+        return result.scalar() or 0
+
     async def mark_as_read(self, email_id: int) -> Optional[Email]:
         """Mark email as read.
 
@@ -198,6 +222,21 @@ class EmailRepository(BaseRepository[Email]):
         email = await self.get_by_id(email_id)
         if email:
             email.is_archived = True
+            await self.session.flush()
+        return email
+
+    async def unarchive(self, email_id: int) -> Optional[Email]:
+        """Unarchive an email.
+
+        Args:
+            email_id: Email ID.
+
+        Returns:
+            Updated email if found, None otherwise.
+        """
+        email = await self.get_by_id(email_id)
+        if email:
+            email.is_archived = False
             await self.session.flush()
         return email
 

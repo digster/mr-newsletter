@@ -159,6 +159,7 @@ class EmailListPage(ft.View):
                 FilterTab("All", "all", is_active=True, on_click=self._on_filter_change, colors=self.colors),
                 FilterTab("Unread", "unread", on_click=self._on_filter_change, colors=self.colors),
                 FilterTab("Starred", "starred", on_click=self._on_filter_change, colors=self.colors),
+                FilterTab("Archived", "archived", on_click=self._on_filter_change, colors=self.colors),
             ],
             spacing=Spacing.XXS,
         )
@@ -323,6 +324,10 @@ class EmailListPage(ft.View):
             self.empty_state_heading.value = "No unread emails"
             self.empty_state_subheading.value = "All caught up!"
             self.empty_state_fetch_button.visible = False
+        elif self.current_filter == "archived":
+            self.empty_state_heading.value = "No archived emails"
+            self.empty_state_subheading.value = "Archive emails to see them here"
+            self.empty_state_fetch_button.visible = False
         else:  # "all"
             self.empty_state_heading.value = "No emails yet"
             self.empty_state_subheading.value = "Fetch emails to get started"
@@ -381,12 +386,14 @@ class EmailListPage(ft.View):
                 # Determine filter flags
                 unread_only = self.current_filter == "unread"
                 starred_only = self.current_filter == "starred"
+                archived_only = self.current_filter == "archived"
 
                 # Get total count for pagination
                 self.total_emails = await email_service.get_filtered_count(
                     self.newsletter_id,
                     unread_only=unread_only,
                     starred_only=starred_only,
+                    archived_only=archived_only,
                 )
                 self.total_pages = max(1, math.ceil(self.total_emails / self.page_size))
 
@@ -402,6 +409,7 @@ class EmailListPage(ft.View):
                     offset=offset,
                     unread_only=unread_only,
                     starred_only=starred_only,
+                    archived_only=archived_only,
                 )
 
                 # Extract email data while still in session context

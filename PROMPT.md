@@ -1148,3 +1148,53 @@ return ft.Container()
 - `src/services/email_service.py` - Don't convert None to "", added logging
 - `src/ui/pages/email_reader_page.py` - Use `is not None` check, added logging
 - `src/ui/components/summary_card.py` - Use `is not None` check
+
+---
+
+## Add Archived Emails Filter Tab with Unarchive Functionality
+
+**Date:** 2026-01-26
+
+**Feature:** Add an "Archived" filter tab to the email list page (alongside All, Unread, Starred) that shows archived emails for each newsletter. When viewing an archived email, show an "Unarchive" button instead of "Archive".
+
+**Implementation:**
+
+1. **Repository Layer (`src/repositories/email_repository.py`):**
+   - Added `archived_only: bool = False` parameter to `get_by_newsletter()` method
+   - When `archived_only=True`, filters for `is_archived.is_(True)` instead of `is_archived == False`
+   - Added `unarchive()` method that sets `email.is_archived = False`
+   - Added `get_archived_count()` method to count archived emails for a newsletter
+
+2. **Service Layer (`src/services/email_service.py`):**
+   - Added `archived_only` parameter to `get_emails_for_newsletter()`, passes to repository
+   - Added `unarchive_email()` method that calls `email_repo.unarchive()` and updates newsletter counts
+   - Added `get_archived_count()` method that delegates to repository
+   - Updated `get_filtered_count()` with `archived_only` parameter - returns archived count when `archived_only=True`
+
+3. **Email List Page (`src/ui/pages/email_list_page.py`):**
+   - Added "Archived" filter tab to `filter_tabs` Row
+   - Updated `_update_empty_state_content()` with case for `archived` filter:
+     - Heading: "No archived emails"
+     - Subheading: "Archive emails to see them here"
+     - Fetch button hidden
+   - Updated `_load_data()` to set `archived_only = self.current_filter == "archived"` and pass to service methods
+
+4. **Email Reader Page (`src/ui/pages/email_reader_page.py`):**
+   - Stored archive button as instance variable `self.archive_button` for dynamic updates
+   - Updated `_load_email()` to set button icon/tooltip based on `email.is_archived`:
+     - If archived: icon = `UNARCHIVE_OUTLINED`, tooltip = "Unarchive"
+     - If not archived: icon = `ARCHIVE_OUTLINED`, tooltip = "Archive"
+   - Replaced `_archive()` with `_toggle_archive()` that checks `email.is_archived` and calls appropriate service method
+
+**Behavior:**
+- Archived emails remain hidden from "All", "Unread", and "Starred" tabs (existing behavior preserved)
+- "Archived" tab shows only archived emails for the newsletter
+- Clicking archive button on non-archived email → archives it, shows snackbar, returns to list
+- Clicking unarchive button on archived email → unarchives it, shows snackbar, returns to list
+- Newsletter counts are updated correctly when archiving/unarchiving
+
+**Files Modified:**
+- `src/repositories/email_repository.py`
+- `src/services/email_service.py`
+- `src/ui/pages/email_list_page.py`
+- `src/ui/pages/email_reader_page.py`

@@ -82,6 +82,18 @@ class EmailReaderPage(ft.View):
             is_enabled=False,
         )
 
+        # Archive/Unarchive button (stored for dynamic updates)
+        self.archive_button = ft.IconButton(
+            icon=ft.Icons.ARCHIVE_OUTLINED,
+            icon_color=self.colors.TEXT_SECONDARY,
+            icon_size=20,
+            tooltip="Archive",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+            ),
+            on_click=lambda e: self.app.page.run_task(self._toggle_archive, e),
+        )
+
         self.sidebar = Sidebar(
             current_route=f"/email/{email_id}",
             newsletters=[],
@@ -139,20 +151,7 @@ class EmailReaderPage(ft.View):
                                                 self._mark_unread, e
                                             ),
                                         ),
-                                        ft.IconButton(
-                                            icon=ft.Icons.ARCHIVE_OUTLINED,
-                                            icon_color=c.TEXT_SECONDARY,
-                                            icon_size=20,
-                                            tooltip="Archive",
-                                            style=ft.ButtonStyle(
-                                                shape=ft.RoundedRectangleBorder(
-                                                    radius=BorderRadius.SM
-                                                ),
-                                            ),
-                                            on_click=lambda e: self.app.page.run_task(
-                                                self._archive, e
-                                            ),
-                                        ),
+                                        self.archive_button,
                                     ],
                                 ),
                                 padding=ft.padding.only(bottom=Spacing.MD),
@@ -224,6 +223,14 @@ class EmailReaderPage(ft.View):
                 if self.email.is_starred
                 else self.colors.STAR_INACTIVE
             )
+
+            # Update archive button based on archived status
+            if self.email.is_archived:
+                self.archive_button.icon = ft.Icons.UNARCHIVE_OUTLINED
+                self.archive_button.tooltip = "Unarchive"
+            else:
+                self.archive_button.icon = ft.Icons.ARCHIVE_OUTLINED
+                self.archive_button.tooltip = "Archive"
 
             # Update summarize button visibility
             self.summarize_button.visible = self._llm_enabled
@@ -390,14 +397,18 @@ class EmailReaderPage(ft.View):
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
 
-    async def _archive(self, e: ft.ControlEvent) -> None:
-        """Archive email and go back."""
+    async def _toggle_archive(self, e: ft.ControlEvent) -> None:
+        """Toggle archive status and go back."""
         try:
             async with self.app.get_session() as session:
                 email_service = EmailService(session)
-                await email_service.archive_email(self.email_id)
+                if self.email.is_archived:
+                    await email_service.unarchive_email(self.email_id)
+                    self.app.show_snackbar("Email unarchived")
+                else:
+                    await email_service.archive_email(self.email_id)
+                    self.app.show_snackbar("Email archived")
 
-            self.app.show_snackbar("Email archived")
             self._go_back(None)
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)

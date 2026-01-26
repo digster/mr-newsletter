@@ -250,3 +250,46 @@ class EmailRepository(BaseRepository[Email]):
             .limit(limit)
         )
         return result.scalars().all()
+
+    async def clear_summary(self, email_id: int) -> Optional[Email]:
+        """Clear summary fields for re-generation.
+
+        Args:
+            email_id: Email ID.
+
+        Returns:
+            Updated email if found, None otherwise.
+        """
+        email = await self.get_by_id(email_id)
+        if email:
+            email.summary = None
+            email.summary_model = None
+            email.summarized_at = None
+            await self.session.flush()
+        return email
+
+    async def update_summary(
+        self,
+        email_id: int,
+        summary: str,
+        model: str,
+        summarized_at: datetime,
+    ) -> Optional[Email]:
+        """Update email with summary data.
+
+        Args:
+            email_id: Email ID.
+            summary: Generated summary text.
+            model: Model name that generated the summary.
+            summarized_at: Timestamp when summary was generated.
+
+        Returns:
+            Updated email if found, None otherwise.
+        """
+        email = await self.get_by_id(email_id)
+        if email:
+            email.summary = summary
+            email.summary_model = model
+            email.summarized_at = summarized_at
+            await self.session.flush()
+        return email

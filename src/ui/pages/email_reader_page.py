@@ -1,19 +1,23 @@
 """Email reader page for viewing email content with sophisticated styling."""
 
 import base64
-from typing import TYPE_CHECKING, Optional
+import logging
+from typing import TYPE_CHECKING
 
 import flet as ft
 from flet_webview import WebView
 
+from src.repositories.user_settings_repository import UserSettingsRepository
 from src.services.email_service import EmailService
 from src.services.newsletter_service import NewsletterService
-from src.ui.components import Sidebar
-from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
+from src.ui.components import Sidebar, SummaryCard
+from src.ui.themes import BorderRadius, Spacing, Typography, get_colors
 from src.utils.html_sanitizer import sanitize_html_for_webview
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
+
+logger = logging.getLogger(__name__)
 
 
 class EmailReaderPage(ft.View):
@@ -25,6 +29,8 @@ class EmailReaderPage(ft.View):
         self.email_id = email_id
         self.email = None
         self.newsletters = []
+        self._user_settings = None
+        self._llm_enabled = False
 
         # Get theme-aware colors
         self.colors = get_colors(self.app.page)
@@ -53,6 +59,27 @@ class EmailReaderPage(ft.View):
                 shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
             ),
             on_click=lambda e: self.app.page.run_task(self._toggle_star, e),
+        )
+
+        # AI Summarize button
+        self.summarize_button = ft.IconButton(
+            icon=ft.Icons.AUTO_AWESOME,
+            icon_color=self.colors.TEXT_SECONDARY,
+            icon_size=20,
+            tooltip="Summarize with AI",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),
+            ),
+            on_click=lambda e: self.app.page.run_task(self._summarize_email, e),
+            visible=False,  # Will be shown if LLM is enabled
+        )
+
+        # Summary card
+        self.summary_card = SummaryCard(
+            colors=self.colors,
+            on_generate=lambda e: self.app.page.run_task(self._summarize_email, e),
+            on_regenerate=lambda e: self.app.page.run_task(self._regenerate_summary, e),
+            is_enabled=False,
         )
 
         self.sidebar = Sidebar(
@@ -97,6 +124,7 @@ class EmailReaderPage(ft.View):
                                         self.loading,
                                         ft.Container(width=Spacing.XS),
                                         self.star_button,
+                                        self.summarize_button,
                                         ft.IconButton(
                                             icon=ft.Icons.MARK_EMAIL_UNREAD,
                                             icon_color=c.TEXT_SECONDARY,
@@ -167,6 +195,11 @@ class EmailReaderPage(ft.View):
                 newsletter_service = NewsletterService(session=session)
                 self.newsletters = await newsletter_service.get_all_newsletters()
 
+                # Load user settings for LLM
+                settings_repo = UserSettingsRepository(session)
+                self._user_settings = await settings_repo.get_settings()
+                self._llm_enabled = getattr(self._user_settings, "llm_enabled", False)
+
                 # Get email
                 self.email = await email_service.get_email(self.email_id)
 
@@ -192,10 +225,23 @@ class EmailReaderPage(ft.View):
                 else self.colors.STAR_INACTIVE
             )
 
+            # Update summarize button visibility
+            self.summarize_button.visible = self._llm_enabled
+
+            # Update summary card (safe - uses _safe_update_content internally)
+            self.summary_card.set_enabled(self._llm_enabled)
+            if self.email.summary:
+                self.summary_card.set_summary(
+                    summary=self.email.summary,
+                    model=self.email.summary_model,
+                    summarized_at=self.email.summarized_at,
+                )
+
             # Build content
             self.content_area.content = self._build_email_content()
 
         except Exception as ex:
+            logger.error(f"Error loading email: {ex}", exc_info=True)
             self.app.show_snackbar(f"Error: {ex}", error=True)
         finally:
             self.loading.visible = False
@@ -217,8 +263,10 @@ class EmailReaderPage(ft.View):
             safe_html = sanitize_html_for_webview(html_content)
         else:
             # Fallback to text - wrap in minimal HTML
+            text_content = self.email.body_text or "No content"
+            pre_style = "font-family: system-ui, sans-serif; white-space: pre-wrap;"
             safe_html = sanitize_html_for_webview(
-                f"<pre style='font-family: system-ui, sans-serif; white-space: pre-wrap;'>{self.email.body_text or 'No content'}</pre>"
+                f"<pre style='{pre_style}'>{text_content}</pre>"
             )
 
         # Create data URL with base64-encoded HTML
@@ -283,7 +331,10 @@ class EmailReaderPage(ft.View):
                         ),
                     ],
                 ),
-                ft.Container(height=Spacing.LG),
+                ft.Container(height=Spacing.MD),
+                # AI Summary card (between sender info and divider)
+                self.summary_card,
+                ft.Container(height=Spacing.MD),
                 # Divider
                 ft.Divider(height=1, color=c.BORDER_SUBTLE),
                 ft.Container(height=Spacing.MD),
@@ -300,7 +351,7 @@ class EmailReaderPage(ft.View):
             expand=True,
         )
 
-    def _go_back(self, e: Optional[ft.ControlEvent]) -> None:
+    def _go_back(self, e: ft.ControlEvent | None) -> None:
         """Go back to email list."""
         if self.email:
             self.app.navigate(f"/newsletter/{self.email.newsletter_id}")
@@ -350,3 +401,87 @@ class EmailReaderPage(ft.View):
             self._go_back(None)
         except Exception as ex:
             self.app.show_snackbar(f"Error: {ex}", error=True)
+
+    async def _summarize_email(self, e: ft.ControlEvent) -> None:
+        """Generate AI summary for the email."""
+        if not self._llm_enabled:
+            self.app.show_snackbar(
+                "AI summarization is disabled. Enable it in Settings.", error=True
+            )
+            return
+
+        # Show loading state
+        self.summary_card.set_loading(True)
+        self.app.page.update()
+
+        # Variables to store extracted values (session objects become detached after context exits)
+        summary = None
+        model = None
+        summarized_at = None
+        error = None
+
+        try:
+            async with self.app.get_session() as session:
+                # Get fresh user settings
+                settings_repo = UserSettingsRepository(session)
+                user_settings = await settings_repo.get_settings()
+
+                # Generate summary
+                email_service = EmailService(session)
+                updated_email, error = await email_service.summarize_email(
+                    email_id=self.email_id,
+                    user_settings=user_settings,
+                )
+
+                if error:
+                    self.summary_card.set_loading(False)
+                    self.app.page.update()
+                    self.app.show_snackbar(error, error=True)
+                    return
+
+                # Eagerly extract values INSIDE the session while object is attached
+                if updated_email:
+                    summary = updated_email.summary
+                    model = updated_email.summary_model
+                    summarized_at = updated_email.summarized_at
+                    logger.info(
+                        f"Extracted: summary={'<' + str(len(summary)) + ' chars>' if summary else 'None'}, "
+                        f"model={model}"
+                    )
+
+            # Now outside session - use the extracted values (not the detached object)
+            # Use `is not None` check - empty string "" is falsy but valid!
+            if summary is not None:
+                self.summary_card.set_summary(
+                    summary=summary,
+                    model=model,
+                    summarized_at=summarized_at,
+                )
+                self.app.page.update()
+            else:
+                # Summary was None - show error
+                self.summary_card.set_loading(False)
+                self.app.page.update()
+                self.app.show_snackbar("Failed to generate summary", error=True)
+
+        except Exception as ex:
+            self.summary_card.set_loading(False)
+            self.app.page.update()
+            self.app.show_snackbar(f"Error generating summary: {ex}", error=True)
+
+    async def _regenerate_summary(self, e: ft.ControlEvent) -> None:
+        """Clear and regenerate the summary."""
+        try:
+            async with self.app.get_session() as session:
+                email_service = EmailService(session)
+                await email_service.clear_email_summary(self.email_id)
+
+            # Clear the summary card
+            self.summary_card.clear()
+            self.app.page.update()
+
+            # Generate new summary
+            await self._summarize_email(e)
+
+        except Exception as ex:
+            self.app.show_snackbar(f"Error regenerating summary: {ex}", error=True)

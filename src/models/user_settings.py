@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, Float, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, TimestampMixin
@@ -49,6 +49,20 @@ class UserSettings(Base, TimestampMixin):
     # User info (cached from Google)
     user_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     user_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # LLM Configuration (for AI Summarization)
+    llm_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0"), nullable=False
+    )
+    llm_api_base_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    llm_api_key_encrypted: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    llm_model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    llm_max_tokens: Mapped[int] = mapped_column(
+        Integer, default=500, server_default=text("500"), nullable=False
+    )
+    llm_temperature: Mapped[float] = mapped_column(
+        Float, default=0.3, server_default=text("0.3"), nullable=False
+    )
 
     def __repr__(self) -> str:
         return f"<UserSettings(theme={self.theme_mode}, user={self.user_email})>"

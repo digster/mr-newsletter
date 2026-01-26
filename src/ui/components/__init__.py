@@ -7,6 +7,7 @@ from .newsletter_list_item import NewsletterListItem
 from .search_bar import SearchBar
 from .sidebar import NavItem, NewsletterNavItem, Sidebar
 from .sort_dropdown import SortDropdown
+from .summary_card import SummaryCard
 
 __all__ = [
     "AddNewsletterDialog",
@@ -20,4 +21,5 @@ __all__ = [
     "SearchBar",
     "Sidebar",
     "SortDropdown",
+    "SummaryCard",
 ]

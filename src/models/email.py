@@ -3,7 +3,16 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin
@@ -67,6 +76,14 @@ class Email(Base, TimestampMixin):
 
     # Size tracking
     size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # AI Summary fields
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    summary_model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    summarized_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     # Newsletter relationship
     newsletter_id: Mapped[int] = mapped_column(

@@ -1,17 +1,19 @@
 """Business logic services."""
 
 from .auth_service import AuthService
-from .gmail_service import GmailService
-from .newsletter_service import NewsletterService
 from .email_service import EmailService
-from .scheduler_service import SchedulerService
 from .fetch_queue_service import FetchQueueService
+from .gmail_service import GmailService
+from .llm_service import LLMService
+from .newsletter_service import NewsletterService
+from .scheduler_service import SchedulerService
 
 __all__ = [
     "AuthService",
-    "GmailService",
-    "NewsletterService",
     "EmailService",
-    "SchedulerService",
     "FetchQueueService",
+    "GmailService",
+    "LLMService",
+    "NewsletterService",
+    "SchedulerService",
 ]

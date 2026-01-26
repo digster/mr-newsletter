@@ -87,6 +87,32 @@ class Settings(BaseSettings):
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
+    # LLM Configuration (for AI Summarization)
+    llm_enabled: bool = Field(
+        default=False,
+        description="Enable AI-powered email summarization",
+    )
+    llm_api_base_url: str = Field(
+        default="http://localhost:1234/v1",
+        description="OpenAI-compatible API base URL (e.g., LM Studio)",
+    )
+    llm_api_key: str = Field(
+        default="",
+        description="API key for the LLM service (optional for local LM Studio)",
+    )
+    llm_model: str = Field(
+        default="",
+        description="Model name/ID (leave empty for server default)",
+    )
+    llm_max_tokens: int = Field(
+        default=500,
+        description="Maximum tokens for summary generation",
+    )
+    llm_temperature: float = Field(
+        default=0.3,
+        description="Temperature for LLM responses (lower = more deterministic)",
+    )
+
     @field_validator("encryption_key")
     @classmethod
     def validate_encryption_key(cls, v: str) -> str:

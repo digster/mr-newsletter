@@ -35,6 +35,8 @@ dependencies = [
     "html2text>=2024.2.26",
     # HTTP Client
     "httpx>=0.28.0",
+    # LLM Integration (OpenAI-compatible APIs)
+    "openai>=1.0.0",
 ]
 
 [project.optional-dependencies]

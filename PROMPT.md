@@ -895,3 +895,256 @@ self.app.page.update()
 **Files Modified:**
 - `src/ui/pages/settings_page.py` - Event handler + page refresh logic
 - `src/ui/components/sort_dropdown.py` - Changed `on_change` to `on_select`
+
+---
+
+## AI Email Summarization Feature
+
+**Date:** 2026-01-25
+
+**Feature:** Add LLM-based email summarization with a toolbar button that generates summaries using a standardized, model-agnostic API (LM Studio, Ollama, or any OpenAI-compatible API).
+
+**Implementation:**
+
+1. **Database Schema**
+   - Added `summary`, `summary_model`, `summarized_at` fields to `Email` model
+   - Added LLM config fields to `UserSettings`: `llm_enabled`, `llm_api_base_url`, `llm_api_key_encrypted`, `llm_model`, `llm_max_tokens`, `llm_temperature`
+   - Created migration to apply schema changes
+
+2. **Configuration (`src/config/settings.py`)**
+   - Added `llm_enabled`, `llm_api_base_url`, `llm_api_key`, `llm_model`, `llm_max_tokens`, `llm_temperature` env vars
+   - Configuration priority: UserSettings (DB) → Environment variables → Defaults
+
+3. **LLM Service (`src/services/llm_service.py`)**
+   - `LLMService` class using OpenAI SDK (works with any OpenAI-compatible API)
+   - `summarize_email()` method generates 2-4 sentence summaries
+   - `check_connection()` method for testing connectivity
+   - Input truncation (~8000 chars) to avoid token limits
+   - API key encryption using existing Fernet encryption
+
+4. **User Settings Repository (`src/repositories/user_settings_repository.py`)**
+   - Created new repository for managing user settings
+   - Methods for updating each LLM setting individually
+   - API key encryption before storage
+
+5. **SummaryCard Component (`src/ui/components/summary_card.py`)**
+   - Three states: Empty (generate button), Loading (progress ring), Summary (collapsible card)
+   - Shows model name and timestamp in metadata
+   - Collapse/expand toggle and regenerate button
+
+6. **Settings Page (`src/ui/pages/settings_page.py`)**
+   - New "AI Summarization" section with:
+     - Enable toggle
+     - API Base URL field
+     - API Key field (encrypted, never displayed)
+     - Model name field
+     - Max tokens field and temperature slider
+     - Test connection button with status display
+
+7. **Email Reader Integration (`src/ui/pages/email_reader_page.py`)**
+   - Added sparkle (AUTO_AWESOME) button in toolbar
+   - SummaryCard placed between sender info and email body
+   - Handlers for generate and regenerate actions
+   - Summary persists across page loads
+
+**Key Technical Decisions:**
+- OpenAI SDK for compatibility with multiple LLM backends
+- Encrypted API key storage in database
+- Config priority chain allows env var overrides for developers
+- Input truncation prevents token limit errors
+- Collapsible card reduces visual noise
+
+**Files Created:**
+- `src/services/llm_service.py`
+- `src/repositories/user_settings_repository.py`
+- `src/ui/components/summary_card.py`
+
+**Files Modified:**
+- `src/models/email.py` - Added summary fields
+- `src/models/user_settings.py` - Added LLM config fields
+- `src/config/settings.py` - Added LLM env vars
+- `src/services/email_service.py` - Added summarize_email method
+- `src/repositories/email_repository.py` - Added summary update methods
+- `src/repositories/__init__.py` - Export UserSettingsRepository
+- `src/services/__init__.py` - Export LLMService
+- `src/ui/components/__init__.py` - Export SummaryCard
+- `src/ui/pages/settings_page.py` - Added AI Summarization section
+- `src/ui/pages/email_reader_page.py` - Added summarize button and card
+- `pyproject.toml` - Added openai dependency
+- `.env.example` - Added LLM configuration examples
+- `ARCHITECTURE.md` - Documented LLMService
+
+---
+
+## Fix AI Summarization - Phase 2: Auto-detect Model
+
+**Date:** 2026-01-26
+
+**Issue:** After fixing the `page.update()` issue (Phase 1), the loading spinner appeared but disappeared quickly with no summary. LM Studio rejects "default" as a model name.
+
+**Root Cause:** In `LLMService.summarize_email()`, when no model is specified:
+1. `settings.llm_model` defaults to `""` (empty string)
+2. Empty string is falsy, so code fell back to `"default"`
+3. LM Studio immediately rejected `"default"` → fast error → spinner disappeared
+
+**Solution:** Auto-detect model from LM Studio's `/v1/models` endpoint instead of using `"default"`.
+
+**Implementation:**
+
+1. Added `_get_available_model()` method to query available models from LM Studio
+2. Modified `summarize_email()` to auto-detect model when none specified
+3. Provides clear error message when no model is available
+
+**Files Modified:**
+- `src/services/llm_service.py` - Added `_get_available_model()` method and updated `summarize_email()` to use auto-detection
+
+---
+
+## Fix AI Summarization - Session Detachment Issue
+
+**Date:** 2026-01-26
+
+**Issue:** Summary is generated and saved to database, but the UI shows "Failed to generate summary" or the summary card remains empty. The database contains the summary data but it's not displayed.
+
+**Root Cause:** SQLAlchemy session detachment. When using `async with session`, the ORM objects become "detached" after the context manager exits. Accessing lazy-loaded attributes (like `updated_email.summary`) on detached objects returns `None` or fails silently.
+
+```python
+async with self.app.get_session() as session:
+    updated_email, error = await email_service.summarize_email(...)
+    # Summary saved to DB here
+# SESSION CLOSES - updated_email is now DETACHED
+# updated_email.summary may be None/inaccessible
+```
+
+**Solution:** Eagerly extract needed values while the session is still active, then use those values after the session closes.
+
+**Implementation:**
+
+1. **Extract values inside session context:**
+```python
+# Variables to store extracted values
+summary = None
+model = None
+summarized_at = None
+
+async with self.app.get_session() as session:
+    # ... generate summary ...
+
+    # Eagerly extract values INSIDE the session
+    if updated_email:
+        summary = updated_email.summary
+        model = updated_email.summary_model
+        summarized_at = updated_email.summarized_at
+
+# Outside session - use extracted values (not detached object)
+if summary:
+    self.summary_card.set_summary(summary=summary, ...)
+```
+
+2. **Removed duplicate button:** Replaced "Generate AI Summary" button in SummaryCard with hint text pointing to toolbar button.
+
+**Key Learning:** SQLAlchemy objects become detached when their session closes. Always access lazy-loaded attributes or extract needed data before exiting an `async with session` block. This is a common pattern issue in async SQLAlchemy applications.
+
+**Files Modified:**
+- `src/ui/pages/email_reader_page.py` - Fixed `_summarize_email()` to extract values inside session
+- `src/ui/components/summary_card.py` - Replaced generate button with hint text pointing to toolbar
+
+---
+
+## Fix AI Summarization - SQLAlchemy expire_on_commit Issue
+
+**Date:** 2026-01-26
+
+**Issue:** Summary is generated and saved to database correctly, but never displays in the UI. Additionally, the SummaryCard showed unwanted hint text when LLM was enabled.
+
+**Root Cause:** SQLAlchemy's default `expire_on_commit=True` behavior:
+
+1. `email_service.summarize_email()` calls `session.commit()` (line 325)
+2. After commit, the `email` object is **expired** (SQLAlchemy's default)
+3. When UI tries to access `email.summary`, the object is stale/expired
+4. The LLM successfully generates the summary and it's saved to the database, but we're returning a stale object
+
+**Solution:** Two fixes applied:
+
+1. **Fix 1 - Refresh email after commit** (`src/services/email_service.py`):
+   - Added `await self.session.refresh(email)` after `session.commit()`
+   - This reloads the email object's attributes from the database
+   - Ensures fresh data is returned to the UI
+
+```python
+await self.session.commit()
+
+# Refresh the email object to reload attributes after commit
+# (SQLAlchemy expires objects on commit, causing stale data issues)
+if email:
+    await self.session.refresh(email)
+
+return email, None
+```
+
+2. **Fix 2 - Remove hint text when LLM enabled** (`src/ui/components/summary_card.py`):
+   - Changed `_build_empty_state()` to return empty container when LLM is enabled
+   - Keeps the "AI Summarization disabled" hint when LLM is disabled
+   - The sparkle button in the toolbar handles summary generation, no duplicate hint needed
+
+```python
+if not self._is_enabled:
+    # Show disabled state hint
+    return ft.Container(content=...)
+
+# When enabled: return empty container (no hint text)
+# The sparkle button in the toolbar handles summary generation
+return ft.Container()
+```
+
+**Key Learning:** SQLAlchemy's `expire_on_commit=True` is the default behavior. After a `commit()`, all loaded objects are "expired" - their attributes become stale and require a fresh database query. Use `session.refresh(obj)` to reload an object's attributes from the database.
+
+**Files Modified:**
+- `src/services/email_service.py` - Added `session.refresh(email)` after commit
+- `src/ui/components/summary_card.py` - Return empty container when LLM is enabled
+
+---
+
+## Fix AI Summarization - Display Issues and Think Tag Stripping
+
+**Date:** 2026-01-26
+
+**Issue:** The AI summary is saved to the database but never displays in the UI. Previous fixes (session.refresh, removing hint text) did not fully resolve the issue.
+
+**Root Causes Identified:**
+
+1. **Empty String Checks (Falsy vs None):** The code used `if summary:` which treats empty string `""` as `False`. If the LLM returned `None` or empty content, it was saved as `""` which then failed the truthy check.
+
+2. **Think Tags in LLM Response:** Some models (like Qwen with thinking mode) wrap their chain-of-thought reasoning in `<think>...</think>` tags. These tags were being included in the summary, making it appear as gibberish to users.
+
+3. **Missing Logging:** Insufficient logging made it difficult to trace where data was being lost in the flow.
+
+**Solution:**
+
+1. **Changed truthy checks to explicit `is not None` checks:**
+   - `src/ui/pages/email_reader_page.py:454` - `if summary:` → `if summary is not None:`
+   - `src/ui/components/summary_card.py:61` - `elif self.summary:` → `elif self.summary is not None:`
+
+2. **Don't convert None to empty string:**
+   - `src/services/email_service.py:320` - `summary=result.summary or ""` → `summary=result.summary`
+
+3. **Added `_clean_response()` method to strip think tags:**
+   - Uses regex `<think>.*?</think>` with `re.DOTALL` flag to remove multiline think blocks
+   - Applied to LLM response before returning in `llm_service.py`
+
+4. **Handle empty LLM response explicitly:**
+   - Added check for empty/whitespace-only response after cleaning
+   - Returns clear error message: "LLM returned empty response. Try a different model or check if the model is loaded."
+
+5. **Added comprehensive logging at key points:**
+   - `llm_service.py`: Logs raw and cleaned response content with length and preview
+   - `email_service.py`: Logs saved summary length after database commit
+   - `email_reader_page.py`: Logs extracted summary values for debugging
+
+**Key Learning:** In Python, empty strings are falsy (`if "":` is `False`). When working with optional string values that could legitimately be empty, always use explicit `is not None` checks instead of relying on truthiness.
+
+**Files Modified:**
+- `src/services/llm_service.py` - Added logging, think tag stripping, empty response handling
+- `src/services/email_service.py` - Don't convert None to "", added logging
+- `src/ui/pages/email_reader_page.py` - Use `is not None` check, added logging
+- `src/ui/components/summary_card.py` - Use `is not None` check

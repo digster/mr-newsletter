@@ -6,8 +6,10 @@ from typing import Optional, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.email import Email
+from src.models.user_settings import UserSettings
 from src.repositories.email_repository import EmailRepository
 from src.repositories.newsletter_repository import NewsletterRepository
+from src.services.llm_service import LLMService, get_current_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -277,3 +279,72 @@ class EmailService:
                 return emails[i - 1]
 
         return None
+
+    async def summarize_email(
+        self,
+        email_id: int,
+        user_settings: Optional[UserSettings] = None,
+    ) -> tuple[Optional[Email], Optional[str]]:
+        """Generate AI summary for an email.
+
+        Args:
+            email_id: Email ID.
+            user_settings: Optional user settings for LLM configuration.
+
+        Returns:
+            Tuple of (updated email, error message if any).
+        """
+        email = await self.email_repo.get_by_id(email_id)
+        if not email:
+            return None, "Email not found"
+
+        # Initialize LLM service with user settings
+        llm_service = LLMService(user_settings=user_settings)
+
+        if not llm_service.is_enabled():
+            return None, "AI summarization is disabled. Enable it in Settings."
+
+        # Generate summary
+        result = await llm_service.summarize_email(
+            subject=email.subject,
+            body_text=email.body_text or "",
+            sender_name=email.sender_name,
+        )
+
+        if not result.success:
+            return None, result.error
+
+        # Save summary to database (keep None if None, don't convert to empty string)
+        email = await self.email_repo.update_summary(
+            email_id=email_id,
+            summary=result.summary,
+            model=result.model or "unknown",
+            summarized_at=get_current_timestamp(),
+        )
+
+        await self.session.commit()
+
+        # Refresh the email object to reload attributes after commit
+        # (SQLAlchemy expires objects on commit, causing stale data issues)
+        if email:
+            await self.session.refresh(email)
+            logger.info(
+                f"Saved summary: id={email.id}, "
+                f"summary_length={len(email.summary) if email.summary else 0}"
+            )
+
+        return email, None
+
+    async def clear_email_summary(self, email_id: int) -> Optional[Email]:
+        """Clear an email's summary for regeneration.
+
+        Args:
+            email_id: Email ID.
+
+        Returns:
+            Updated email if found.
+        """
+        email = await self.email_repo.clear_summary(email_id)
+        if email:
+            await self.session.commit()
+        return email

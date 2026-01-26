@@ -188,7 +188,7 @@ NewsletterApp
 | Model | File | Purpose |
 |-------|------|---------|
 | **Newsletter** | `src/models/newsletter.py` | Links Gmail label to app newsletter, tracks fetch metadata |
-| **Email** | `src/models/email.py` | Stores email metadata + sanitized HTML content |
+| **Email** | `src/models/email.py` | Stores email metadata, sanitized HTML, and AI summaries |
 | **UserCredential** | `src/models/user_credential.py` | OAuth tokens encrypted with Fernet |
 | **UserSettings** | `src/models/user_settings.py` | Singleton for UI preferences |
 
@@ -268,6 +268,22 @@ NewsletterApp
 
 ---
 
+### LLMService (`src/services/llm_service.py`)
+
+**Purpose**: AI-powered email summarization using OpenAI-compatible APIs
+
+| Method | Description |
+|--------|-------------|
+| `summarize_email()` | Generate concise summary for an email |
+| `check_connection()` | Test connectivity to LLM API |
+| `is_enabled()` | Check if summarization is enabled |
+
+**Configuration Priority**: UserSettings (DB) → Environment variables → Defaults
+
+**Compatible APIs**: LM Studio, Ollama, OpenAI, or any OpenAI-compatible endpoint
+
+---
+
 ## 6. UI Structure
 
 ### Routing
@@ -312,6 +328,7 @@ Pydantic Settings model loading from `.env`:
 | **Gmail OAuth** | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | **Flet UI** | `FLET_HOST`, `FLET_PORT`, `FLET_WEB_APP` |
 | **Scheduler** | `SCHEDULER_ENABLED`, `DEFAULT_FETCH_INTERVAL`, `FETCH_QUEUE_DELAY_SECONDS` |
+| **LLM** | `LLM_ENABLED`, `LLM_API_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_MAX_TOKENS`, `LLM_TEMPERATURE` |
 
 ### Platform Data Directory
 

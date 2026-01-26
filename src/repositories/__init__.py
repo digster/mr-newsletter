@@ -1,11 +1,13 @@
 """Data access layer."""
 
 from .base_repository import BaseRepository
-from .newsletter_repository import NewsletterRepository
 from .email_repository import EmailRepository
+from .newsletter_repository import NewsletterRepository
+from .user_settings_repository import UserSettingsRepository
 
 __all__ = [
     "BaseRepository",
-    "NewsletterRepository",
     "EmailRepository",
+    "NewsletterRepository",
+    "UserSettingsRepository",
 ]

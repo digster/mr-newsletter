@@ -426,8 +426,8 @@ class TestBuiltinThemes:
 
     @pytest.fixture
     def hex_pattern(self):
-        """Regex pattern for valid hex color codes."""
-        return re.compile(r"^#[0-9A-Fa-f]{6}$")
+        """Regex pattern for valid hex color codes (6 or 8 digit with alpha)."""
+        return re.compile(r"^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")
 
     @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
     def test_builtin_theme_has_valid_structure(self, filename):
@@ -542,10 +542,12 @@ class TestBuiltinThemes:
             "catppuccin-mocha.json",
             "one-dark.json",
             "tokyo-night.json",
+            # Glass effects
+            "liquid-glass.json",
         }
 
         actual_themes = set(ALL_BUILTIN_THEMES.keys())
         missing = expected_themes - actual_themes
 
         assert not missing, f"Missing expected themes: {missing}"
-        assert len(actual_themes) == 14, f"Expected 14 themes, found {len(actual_themes)}"
+        assert len(actual_themes) == 15, f"Expected 15 themes, found {len(actual_themes)}"

@@ -10,6 +10,7 @@ from .default import DEFAULT_THEME
 from .dracula import DRACULA_THEME
 from .gruvbox import GRUVBOX_DARK_THEME, GRUVBOX_LIGHT_THEME
 from .light_clean import LIGHT_CLEAN_THEME
+from .liquid_glass import LIQUID_GLASS_THEME
 from .midnight import MIDNIGHT_THEME
 from .nord import NORD_THEME
 from .one_dark import ONE_DARK_THEME
@@ -35,6 +36,8 @@ ALL_BUILTIN_THEMES: dict[str, dict] = {
     "catppuccin-mocha.json": CATPPUCCIN_MOCHA_THEME,
     "one-dark.json": ONE_DARK_THEME,
     "tokyo-night.json": TOKYO_NIGHT_THEME,
+    # Glass effects
+    "liquid-glass.json": LIQUID_GLASS_THEME,
 }
 
 __all__ = [
@@ -53,4 +56,5 @@ __all__ = [
     "CATPPUCCIN_MOCHA_THEME",
     "ONE_DARK_THEME",
     "TOKYO_NIGHT_THEME",
+    "LIQUID_GLASS_THEME",
 ]

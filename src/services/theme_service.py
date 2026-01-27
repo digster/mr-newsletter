@@ -38,6 +38,8 @@ BUILTIN_THEMES = frozenset({
     "catppuccin-mocha.json",
     "one-dark.json",
     "tokyo-night.json",
+    # Glass effects
+    "liquid-glass.json",
 })
 
 

@@ -478,6 +478,54 @@ class ThemeService:
         except Exception as e:
             return False, f"Import failed: {e}"
 
+    def import_theme_from_bytes(
+        self, filename: str, content: bytes
+    ) -> tuple[bool, Optional[str]]:
+        """Import a theme from bytes content (for web mode).
+
+        In web browsers, file picker doesn't expose local file paths.
+        Instead, we receive the file content as bytes directly.
+
+        Args:
+            filename: Original filename from the file picker.
+            content: JSON content as bytes.
+
+        Returns:
+            Tuple of (success, error_message).
+        """
+        try:
+            # Parse and validate
+            data = json.loads(content.decode("utf-8"))
+            success, theme, error = self.validate_theme(data)
+            if not success:
+                return False, error
+
+            # Generate destination path
+            dest_filename = filename if filename.endswith(".json") else f"{filename}.json"
+            dest_path = self._themes_dir / dest_filename
+            counter = 1
+
+            while dest_path.exists() and dest_filename not in BUILTIN_THEMES:
+                stem = Path(filename).stem
+                dest_filename = f"{stem}_{counter}.json"
+                dest_path = self._themes_dir / dest_filename
+                counter += 1
+
+            # Cannot overwrite built-in themes
+            if dest_filename in BUILTIN_THEMES:
+                dest_filename = f"custom_{dest_filename}"
+                dest_path = self._themes_dir / dest_filename
+
+            # Write content
+            dest_path.write_bytes(content)
+            logger.info(f"Imported theme from bytes: {dest_filename}")
+            return True, None
+
+        except json.JSONDecodeError as e:
+            return False, f"Invalid JSON: {e}"
+        except Exception as e:
+            return False, f"Import failed: {e}"
+
     def export_theme(self, filename: str, dest_path: Path) -> tuple[bool, Optional[str]]:
         """Export a theme file to external location.
 

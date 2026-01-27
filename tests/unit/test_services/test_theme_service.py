@@ -330,3 +330,60 @@ class TestThemeService:
             data = json.load(f)
         assert data["metadata"]["name"] == "My Custom Theme"
         assert data["metadata"]["author"] == "Tester"
+
+    def test_import_theme_from_bytes(self, service, temp_themes_dir):
+        """Test importing a theme from bytes content (web mode)."""
+        # Create theme data as bytes (simulating web upload)
+        import_data = {
+            "metadata": {"name": "Bytes Imported Theme"},
+            "colors": {"light": {"accent": "#ABCDEF"}},
+        }
+        content_bytes = json.dumps(import_data).encode("utf-8")
+
+        success, error = service.import_theme_from_bytes("bytes-theme.json", content_bytes)
+
+        assert success is True
+        assert error is None
+
+        # Verify theme was imported
+        themes = service.list_themes()
+        names = [t.name for t in themes]
+        assert "Bytes Imported Theme" in names
+
+        # Verify the file content
+        theme_path = temp_themes_dir / "bytes-theme.json"
+        assert theme_path.exists()
+        with open(theme_path) as f:
+            data = json.load(f)
+        assert data["metadata"]["name"] == "Bytes Imported Theme"
+
+    def test_import_theme_from_bytes_invalid_json(self, service):
+        """Test importing invalid JSON bytes."""
+        invalid_bytes = b"not valid json"
+
+        success, error = service.import_theme_from_bytes("invalid.json", invalid_bytes)
+
+        assert success is False
+        assert "invalid json" in error.lower()
+
+    def test_import_theme_from_bytes_prevents_builtin_overwrite(self, service, temp_themes_dir):
+        """Test that importing bytes cannot overwrite built-in themes."""
+        # Try to import a theme with a built-in filename
+        import_data = {
+            "metadata": {"name": "Fake Default"},
+            "colors": {"light": {"accent": "#000000"}},
+        }
+        content_bytes = json.dumps(import_data).encode("utf-8")
+
+        success, error = service.import_theme_from_bytes("default.json", content_bytes)
+
+        assert success is True  # Import should succeed
+        assert error is None
+
+        # But it should have been renamed to custom_default.json
+        custom_path = temp_themes_dir / "custom_default.json"
+        assert custom_path.exists()
+
+        # Original default.json should still be the built-in
+        success, theme, _ = service.load_theme("default.json")
+        assert theme.metadata.name == "Default"  # Not "Fake Default"

@@ -1231,7 +1231,67 @@ return ft.Container()
 page.open(dialog)     # Show dialog
 page.close(dialog)    # Close dialog
 
-# FilePicker - Modern async/await pattern  
+# FilePicker - Modern async/await pattern
 files = await ft.FilePicker().pick_files(...)
 path = await ft.FilePicker().save_file(...)  # Desktop only!
 ```
+
+---
+
+## Fix Theme Mode Override and Import/Export Issues
+
+**Date:** 2026-01-27
+
+**Issues:**
+1. **Theme's `base` property ignored:** When selecting a theme with `base: "light"` but the appearance is "dark", only accent colors change - the overall appearance stays dark.
+2. **Import broken in web mode:** `files[0].path` is `None` in browsers - Flet doesn't expose local file paths in web mode.
+
+**Root Causes:**
+
+1. **Theme Base Not Applied:** Each theme has two color sets (light + dark variants) and a `base` property indicating its intended mode. When `_on_theme_change()` applies a theme:
+   - It sets `page.theme` and `page.dark_theme` with the theme's color variants
+   - But it **never reads `theme.metadata.base`** to switch `page.theme_mode`
+   - Result: User stays in their current mode, seeing the "wrong" variant
+
+2. **Web Mode File Access:** In web browsers:
+   - `FilePickerFile.path` is always `None` (browser security sandbox)
+   - Must use Flet's upload mechanism to get file content to server
+   - Then read from server's upload directory
+
+**Solution:**
+
+1. **Apply theme base mode** (`src/ui/pages/settings_page.py:_on_theme_change`):
+```python
+# Switch appearance mode to match theme's base
+if theme.metadata.base == "dark":
+    self.app.page.theme_mode = ft.ThemeMode.DARK
+else:
+    self.app.page.theme_mode = ft.ThemeMode.LIGHT
+
+# Update the appearance dropdown to reflect the new mode
+if hasattr(self, "theme_dropdown") and self.theme_dropdown:
+    self.theme_dropdown.value = theme.metadata.base
+```
+
+2. **Add bytes-based import method** (`src/services/theme_service.py`):
+   - Added `import_theme_from_bytes(filename, content_bytes)` method
+   - Parses JSON from bytes, validates schema, writes to themes directory
+   - Handles filename collisions and builtin theme protection
+
+3. **Web mode upload flow** (`src/ui/pages/settings_page.py:_async_theme_import`):
+   - Desktop mode: Use `file.path` directly (existing behavior)
+   - Web mode: Upload file via `file_picker.upload()` with `page.get_upload_url()`, then import from upload directory
+
+**Key Technical Insight:** In Flet web mode, file handling requires a two-step process:
+1. `file_picker.pick_files()` returns file metadata (name, size) but NOT the path
+2. `file_picker.upload()` sends file bytes to server via signed URL from `page.get_upload_url()`
+3. File is then accessible in `page.upload_dir` on the server
+
+**Files Modified:**
+- `src/ui/pages/settings_page.py` - Apply theme base mode, web upload flow
+- `src/services/theme_service.py` - Added `import_theme_from_bytes()` method
+
+**Tests Added:**
+- `test_import_theme_from_bytes` - Valid theme import
+- `test_import_theme_from_bytes_invalid_json` - Invalid JSON handling
+- `test_import_theme_from_bytes_prevents_builtin_overwrite` - Built-in protection

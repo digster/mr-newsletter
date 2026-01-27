@@ -498,18 +498,66 @@ class SettingsPage(ft.View):
         self.app.page.run_task(self._async_theme_import)
 
     async def _async_theme_import(self) -> None:
-        """Async handler for theme import using modern Flet 0.80 await pattern."""
+        """Async handler for theme import using modern Flet 0.80 await pattern.
+
+        Handles both desktop and web modes:
+        - Desktop: Uses file.path directly
+        - Web: Uploads file to server temp storage, then reads from there
+        """
         try:
+            # Create file picker with upload handler for web mode
+            file_picker = ft.FilePicker()
+
             # In Flet 0.80+, pick_files() can be awaited directly
-            files = await ft.FilePicker().pick_files(
+            files = await file_picker.pick_files(
                 dialog_title="Import Theme",
                 allowed_extensions=["json"],
                 file_type=ft.FilePickerFileType.CUSTOM,
             )
 
             if files and len(files) > 0:
-                source_path = Path(files[0].path)
-                success, error = self.theme_service.import_theme(source_path)
+                picked_file = files[0]
+
+                # Check if we have a file path (desktop) or need upload (web)
+                if picked_file.path:
+                    # Desktop mode: use file path directly
+                    source_path = Path(picked_file.path)
+                    success, error = self.theme_service.import_theme(source_path)
+                else:
+                    # Web mode: upload file to server, then import from there
+                    # Generate a unique upload path for the theme file
+                    import uuid
+
+                    temp_filename = f"theme_import_{uuid.uuid4().hex[:8]}_{picked_file.name}"
+                    upload_url = self.app.page.get_upload_url(temp_filename, 60)
+
+                    # Upload the file
+                    await file_picker.upload(
+                        files=[
+                            ft.FilePickerUploadFile(
+                                name=picked_file.name,
+                                upload_url=upload_url,
+                            )
+                        ]
+                    )
+
+                    # Wait a moment for upload to complete
+                    import asyncio
+
+                    await asyncio.sleep(0.5)
+
+                    # Read from upload directory
+                    upload_dir = Path(self.app.page.upload_dir) if hasattr(self.app.page, 'upload_dir') else None
+                    if upload_dir and (upload_dir / temp_filename).exists():
+                        source_path = upload_dir / temp_filename
+                        success, error = self.theme_service.import_theme(source_path)
+                        # Clean up temp file
+                        try:
+                            source_path.unlink()
+                        except Exception:
+                            pass
+                    else:
+                        success, error = False, "Failed to upload theme file in web mode"
 
                 if success:
                     self.app.show_snackbar("Theme imported successfully")
@@ -570,6 +618,16 @@ class SettingsPage(ft.View):
 
             # Apply theme colors
             light_colors, dark_colors = self.theme_service.apply_theme(theme)
+
+            # Switch appearance mode to match theme's base
+            if theme.metadata.base == "dark":
+                self.app.page.theme_mode = ft.ThemeMode.DARK
+            else:
+                self.app.page.theme_mode = ft.ThemeMode.LIGHT
+
+            # Update the appearance dropdown to reflect the new mode
+            if hasattr(self, "theme_dropdown") and self.theme_dropdown:
+                self.theme_dropdown.value = theme.metadata.base
 
             # Save to database
             async with self.app.get_session() as session:

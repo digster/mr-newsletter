@@ -1,15 +1,47 @@
 """Unit tests for ThemeService."""
 
 import json
+import re
 import tempfile
 from pathlib import Path
 
 import pytest
 
 from src.services.theme_service import BUILTIN_THEMES, ThemeService
+from src.ui.themes.builtin_themes import ALL_BUILTIN_THEMES
 from src.ui.themes.design_tokens import Colors
 from src.ui.themes.dynamic_colors import create_colors_from_theme
 from src.ui.themes.theme_schema import ThemeColorSet, ThemeColors, ThemeMetadata, ThemeSchema
+
+# All required color tokens that each theme must define
+REQUIRED_COLOR_TOKENS = [
+    "bg_primary",
+    "bg_secondary",
+    "bg_tertiary",
+    "bg_elevated",
+    "text_primary",
+    "text_secondary",
+    "text_tertiary",
+    "text_disabled",
+    "border_default",
+    "border_subtle",
+    "border_strong",
+    "hover",
+    "active",
+    "focus_ring",
+    "accent",
+    "accent_hover",
+    "accent_muted",
+    "success",
+    "success_muted",
+    "warning",
+    "warning_muted",
+    "error",
+    "error_muted",
+    "unread_dot",
+    "star_active",
+    "star_inactive",
+]
 
 
 class TestThemeSchema:
@@ -387,3 +419,133 @@ class TestThemeService:
         # Original default.json should still be the built-in
         success, theme, _ = service.load_theme("default.json")
         assert theme.metadata.name == "Default"  # Not "Fake Default"
+
+
+class TestBuiltinThemes:
+    """Tests for all built-in theme definitions."""
+
+    @pytest.fixture
+    def hex_pattern(self):
+        """Regex pattern for valid hex color codes."""
+        return re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_has_valid_structure(self, filename):
+        """Test all built-in themes have valid structure."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+
+        # Must have metadata
+        assert "metadata" in theme_data
+        assert "name" in theme_data["metadata"]
+        assert "base" in theme_data["metadata"]
+        assert theme_data["metadata"]["base"] in ("light", "dark")
+
+        # Must have colors
+        assert "colors" in theme_data
+        assert "light" in theme_data["colors"]
+        assert "dark" in theme_data["colors"]
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_validates_with_schema(self, filename):
+        """Test all built-in themes pass Pydantic validation."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+        # This should not raise
+        theme = ThemeSchema.model_validate(theme_data)
+        assert theme.metadata.name is not None
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_has_all_light_colors(self, filename):
+        """Test all built-in themes define all required light mode colors."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+        light_colors = theme_data["colors"]["light"]
+
+        missing = []
+        for token in REQUIRED_COLOR_TOKENS:
+            if token not in light_colors or light_colors[token] is None:
+                missing.append(token)
+
+        assert not missing, f"{filename} light mode missing colors: {missing}"
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_has_all_dark_colors(self, filename):
+        """Test all built-in themes define all required dark mode colors."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+        dark_colors = theme_data["colors"]["dark"]
+
+        missing = []
+        for token in REQUIRED_COLOR_TOKENS:
+            if token not in dark_colors or dark_colors[token] is None:
+                missing.append(token)
+
+        assert not missing, f"{filename} dark mode missing colors: {missing}"
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_colors_are_valid_hex(self, filename, hex_pattern):
+        """Test all color values are valid hex codes."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+
+        invalid_colors = []
+
+        for mode in ["light", "dark"]:
+            colors = theme_data["colors"][mode]
+            for token, value in colors.items():
+                if value is not None and not hex_pattern.match(value):
+                    invalid_colors.append(f"{mode}.{token}: {value}")
+
+        assert not invalid_colors, f"{filename} has invalid hex colors: {invalid_colors}"
+
+    @pytest.mark.parametrize("filename", list(ALL_BUILTIN_THEMES.keys()))
+    def test_builtin_theme_creates_color_classes(self, filename):
+        """Test all built-in themes generate valid color classes."""
+        theme_data = ALL_BUILTIN_THEMES[filename]
+        theme = ThemeSchema.model_validate(theme_data)
+
+        light, dark = create_colors_from_theme(theme)
+
+        # Verify key attributes exist
+        assert hasattr(light, "BG_PRIMARY")
+        assert hasattr(light, "ACCENT")
+        assert hasattr(light, "TEXT_PRIMARY")
+        assert hasattr(dark, "BG_PRIMARY")
+        assert hasattr(dark, "ACCENT")
+        assert hasattr(dark, "TEXT_PRIMARY")
+
+    def test_builtin_themes_frozenset_matches_definitions(self):
+        """Test BUILTIN_THEMES frozenset matches ALL_BUILTIN_THEMES keys."""
+        defined_themes = set(ALL_BUILTIN_THEMES.keys())
+        registered_themes = set(BUILTIN_THEMES)
+
+        # Check for themes defined but not registered
+        unregistered = defined_themes - registered_themes
+        assert not unregistered, f"Themes defined but not in BUILTIN_THEMES: {unregistered}"
+
+        # Check for themes registered but not defined
+        undefined = registered_themes - defined_themes
+        assert not undefined, f"Themes in BUILTIN_THEMES but not defined: {undefined}"
+
+    def test_all_expected_themes_present(self):
+        """Test all expected popular themes are present."""
+        expected_themes = {
+            # Original themes
+            "default.json",
+            "dark-slate.json",
+            "light-clean.json",
+            "midnight.json",
+            # Popular color schemes
+            "nord.json",
+            "solarized-light.json",
+            "solarized-dark.json",
+            "dracula.json",
+            "gruvbox-light.json",
+            "gruvbox-dark.json",
+            "catppuccin-latte.json",
+            "catppuccin-mocha.json",
+            "one-dark.json",
+            "tokyo-night.json",
+        }
+
+        actual_themes = set(ALL_BUILTIN_THEMES.keys())
+        missing = expected_themes - actual_themes
+
+        assert not missing, f"Missing expected themes: {missing}"
+        assert len(actual_themes) == 14, f"Expected 14 themes, found {len(actual_themes)}"

@@ -16,17 +16,29 @@ from pydantic import ValidationError
 from src.config.settings import get_settings
 from src.ui.themes.design_tokens import Colors, set_active_theme_colors
 from src.ui.themes.dynamic_colors import create_colors_from_theme
-from src.ui.themes.theme_schema import (
-    ThemeColorSet,
-    ThemeColors,
-    ThemeMetadata,
-    ThemeSchema,
-)
+from src.ui.themes.theme_schema import ThemeSchema
 
 logger = logging.getLogger(__name__)
 
 # Built-in theme names (cannot be deleted)
-BUILTIN_THEMES = frozenset({"default.json", "dark-slate.json", "light-clean.json", "midnight.json"})
+BUILTIN_THEMES = frozenset({
+    # Original themes
+    "default.json",
+    "dark-slate.json",
+    "light-clean.json",
+    "midnight.json",
+    # Popular color schemes
+    "nord.json",
+    "solarized-light.json",
+    "solarized-dark.json",
+    "dracula.json",
+    "gruvbox-light.json",
+    "gruvbox-dark.json",
+    "catppuccin-latte.json",
+    "catppuccin-mocha.json",
+    "one-dark.json",
+    "tokyo-night.json",
+})
 
 
 @dataclass
@@ -63,258 +75,13 @@ class ThemeService:
 
     def _ensure_builtin_themes(self) -> None:
         """Create built-in themes if they don't exist."""
-        default_path = self._themes_dir / "default.json"
-        dark_slate_path = self._themes_dir / "dark-slate.json"
-        light_clean_path = self._themes_dir / "light-clean.json"
-        midnight_path = self._themes_dir / "midnight.json"
+        from src.ui.themes.builtin_themes import ALL_BUILTIN_THEMES
 
-        if not default_path.exists():
-            self._write_default_theme(default_path)
-
-        if not dark_slate_path.exists():
-            self._write_dark_slate_theme(dark_slate_path)
-
-        if not light_clean_path.exists():
-            self._write_light_clean_theme(light_clean_path)
-
-        if not midnight_path.exists():
-            self._write_midnight_theme(midnight_path)
-
-    def _write_default_theme(self, path: Path) -> None:
-        """Write the default theme file from current Colors."""
-        theme_data = {
-            "metadata": {
-                "name": "Default",
-                "author": "Newsletter Reader",
-                "version": "1.0.0",
-                "description": "Sophistication & Trust - cool slate tones with blue accent",
-                "base": "light",
-            },
-            "colors": {
-                "light": self._colors_class_to_dict(Colors.Light),
-                "dark": self._colors_class_to_dict(Colors.Dark),
-            },
-        }
-        path.write_text(json.dumps(theme_data, indent=2))
-        logger.info(f"Created default theme at {path}")
-
-    def _write_dark_slate_theme(self, path: Path) -> None:
-        """Write the dark slate theme file (OLED-friendly)."""
-        theme_data = {
-            "metadata": {
-                "name": "Dark Slate",
-                "author": "Newsletter Reader",
-                "version": "1.0.0",
-                "description": "Deep slate OLED-optimized dark theme",
-                "base": "dark",
-            },
-            "colors": {
-                "light": {
-                    "bg_primary": "#FAFAFA",
-                    "bg_secondary": "#F5F5F5",
-                    "bg_tertiary": "#EEEEEE",
-                    "bg_elevated": "#FFFFFF",
-                    "text_primary": "#1A1A1A",
-                    "text_secondary": "#525252",
-                    "text_tertiary": "#8A8A8A",
-                    "text_disabled": "#BDBDBD",
-                    "border_default": "#E0E0E0",
-                    "border_subtle": "#EEEEEE",
-                    "border_strong": "#BDBDBD",
-                    "hover": "#F5F5F5",
-                    "active": "#EEEEEE",
-                    "focus_ring": "#6366F1",
-                    "accent": "#6366F1",
-                    "accent_hover": "#4F46E5",
-                    "accent_muted": "#EEF2FF",
-                    "success": "#22C55E",
-                    "success_muted": "#DCFCE7",
-                    "warning": "#F59E0B",
-                    "warning_muted": "#FEF3C7",
-                    "error": "#EF4444",
-                    "error_muted": "#FEE2E2",
-                    "unread_dot": "#6366F1",
-                    "star_active": "#F59E0B",
-                    "star_inactive": "#BDBDBD",
-                },
-                "dark": {
-                    "bg_primary": "#000000",
-                    "bg_secondary": "#0A0A0A",
-                    "bg_tertiary": "#171717",
-                    "bg_elevated": "#0A0A0A",
-                    "text_primary": "#FAFAFA",
-                    "text_secondary": "#A3A3A3",
-                    "text_tertiary": "#737373",
-                    "text_disabled": "#525252",
-                    "border_default": "#262626",
-                    "border_subtle": "#171717",
-                    "border_strong": "#404040",
-                    "hover": "#0A0A0A",
-                    "active": "#171717",
-                    "focus_ring": "#818CF8",
-                    "accent": "#818CF8",
-                    "accent_hover": "#6366F1",
-                    "accent_muted": "#1E1B4B",
-                    "success": "#4ADE80",
-                    "success_muted": "#14532D",
-                    "warning": "#FBBF24",
-                    "warning_muted": "#78350F",
-                    "error": "#F87171",
-                    "error_muted": "#7F1D1D",
-                    "unread_dot": "#818CF8",
-                    "star_active": "#FBBF24",
-                    "star_inactive": "#404040",
-                },
-            },
-        }
-        path.write_text(json.dumps(theme_data, indent=2))
-        logger.info(f"Created dark-slate theme at {path}")
-
-    def _write_light_clean_theme(self, path: Path) -> None:
-        """Write the light clean theme file (warm, modern, minimal)."""
-        theme_data = {
-            "metadata": {
-                "name": "Light Clean",
-                "author": "Newsletter Reader",
-                "version": "1.0.0",
-                "description": "Warm, modern light theme with teal accent",
-                "base": "light",
-            },
-            "colors": {
-                "light": {
-                    "bg_primary": "#FFFFFF",
-                    "bg_secondary": "#F8FAFC",
-                    "bg_tertiary": "#F1F5F9",
-                    "bg_elevated": "#FFFFFF",
-                    "text_primary": "#0F172A",
-                    "text_secondary": "#475569",
-                    "text_tertiary": "#94A3B8",
-                    "text_disabled": "#CBD5E1",
-                    "border_default": "#E2E8F0",
-                    "border_subtle": "#F1F5F9",
-                    "border_strong": "#CBD5E1",
-                    "hover": "#F8FAFC",
-                    "active": "#F1F5F9",
-                    "focus_ring": "#14B8A6",
-                    "accent": "#14B8A6",
-                    "accent_hover": "#0D9488",
-                    "accent_muted": "#CCFBF1",
-                    "success": "#10B981",
-                    "success_muted": "#D1FAE5",
-                    "warning": "#F59E0B",
-                    "warning_muted": "#FEF3C7",
-                    "error": "#EF4444",
-                    "error_muted": "#FEE2E2",
-                    "unread_dot": "#14B8A6",
-                    "star_active": "#F59E0B",
-                    "star_inactive": "#CBD5E1",
-                },
-                "dark": {
-                    "bg_primary": "#0F172A",
-                    "bg_secondary": "#1E293B",
-                    "bg_tertiary": "#334155",
-                    "bg_elevated": "#1E293B",
-                    "text_primary": "#F8FAFC",
-                    "text_secondary": "#CBD5E1",
-                    "text_tertiary": "#94A3B8",
-                    "text_disabled": "#64748B",
-                    "border_default": "#334155",
-                    "border_subtle": "#1E293B",
-                    "border_strong": "#475569",
-                    "hover": "#1E293B",
-                    "active": "#334155",
-                    "focus_ring": "#2DD4BF",
-                    "accent": "#2DD4BF",
-                    "accent_hover": "#14B8A6",
-                    "accent_muted": "#134E4A",
-                    "success": "#34D399",
-                    "success_muted": "#065F46",
-                    "warning": "#FBBF24",
-                    "warning_muted": "#78350F",
-                    "error": "#F87171",
-                    "error_muted": "#7F1D1D",
-                    "unread_dot": "#2DD4BF",
-                    "star_active": "#FBBF24",
-                    "star_inactive": "#475569",
-                },
-            },
-        }
-        path.write_text(json.dumps(theme_data, indent=2))
-        logger.info(f"Created light-clean theme at {path}")
-
-    def _write_midnight_theme(self, path: Path) -> None:
-        """Write the midnight theme file (dramatic dark with magenta accent)."""
-        theme_data = {
-            "metadata": {
-                "name": "Midnight",
-                "author": "Newsletter Reader",
-                "version": "1.0.0",
-                "description": "Dramatic dark theme with magenta/fuchsia accent",
-                "base": "dark",
-            },
-            "colors": {
-                "light": {
-                    # Light mode variant (inverted approach)
-                    "bg_primary": "#FDFAFF",
-                    "bg_secondary": "#F8F0FC",
-                    "bg_tertiary": "#F3E8FA",
-                    "bg_elevated": "#FFFFFF",
-                    "text_primary": "#1A0A24",
-                    "text_secondary": "#4A3456",
-                    "text_tertiary": "#8B6A9E",
-                    "text_disabled": "#C4A8D4",
-                    "border_default": "#E8D4F0",
-                    "border_subtle": "#F3E8FA",
-                    "border_strong": "#D4B8E4",
-                    "hover": "#F8F0FC",
-                    "active": "#F3E8FA",
-                    "focus_ring": "#D946EF",
-                    "accent": "#D946EF",
-                    "accent_hover": "#C026D3",
-                    "accent_muted": "#FAE8FF",
-                    "success": "#22C55E",
-                    "success_muted": "#DCFCE7",
-                    "warning": "#F59E0B",
-                    "warning_muted": "#FEF3C7",
-                    "error": "#EF4444",
-                    "error_muted": "#FEE2E2",
-                    "unread_dot": "#D946EF",
-                    "star_active": "#F59E0B",
-                    "star_inactive": "#C4A8D4",
-                },
-                "dark": {
-                    # True black OLED with magenta/fuchsia accent
-                    "bg_primary": "#0D0D0D",
-                    "bg_secondary": "#141414",
-                    "bg_tertiary": "#1F1F1F",
-                    "bg_elevated": "#181818",
-                    "text_primary": "#FAFAFA",
-                    "text_secondary": "#B8B8B8",
-                    "text_tertiary": "#787878",
-                    "text_disabled": "#484848",
-                    "border_default": "#2E2E2E",
-                    "border_subtle": "#1F1F1F",
-                    "border_strong": "#444444",
-                    "hover": "#1A1A1A",
-                    "active": "#252525",
-                    "focus_ring": "#E879F9",
-                    "accent": "#E879F9",
-                    "accent_hover": "#D946EF",
-                    "accent_muted": "#3B0764",
-                    "success": "#4ADE80",
-                    "success_muted": "#14532D",
-                    "warning": "#FBBF24",
-                    "warning_muted": "#78350F",
-                    "error": "#F87171",
-                    "error_muted": "#7F1D1D",
-                    "unread_dot": "#E879F9",
-                    "star_active": "#FBBF24",
-                    "star_inactive": "#444444",
-                },
-            },
-        }
-        path.write_text(json.dumps(theme_data, indent=2))
-        logger.info(f"Created midnight theme at {path}")
+        for filename, theme_data in ALL_BUILTIN_THEMES.items():
+            theme_path = self._themes_dir / filename
+            if not theme_path.exists():
+                theme_path.write_text(json.dumps(theme_data, indent=2))
+                logger.info(f"Created built-in theme at {theme_path}")
 
     def _colors_class_to_dict(self, colors_class: Type) -> dict:
         """Convert a Colors class to a dictionary.

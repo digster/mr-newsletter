@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import flet as ft
 
-from src.services.theme_service import ThemeInfo, ThemeService
+from src.services.theme_service import ThemeInfo, ThemeService, UNDELETABLE_THEME
 from src.ui.themes import BorderRadius, Colors, Spacing, Typography, get_colors
 
 if TYPE_CHECKING:
@@ -118,12 +118,12 @@ class ThemeListItem(ft.Container):
                     bgcolor=c.BG_TERTIARY,
                     border_radius=BorderRadius.SM,
                 ),
-                # Delete button (only for non-builtin)
+                # Delete button (hidden only for undeletable default theme)
                 ft.IconButton(
                     icon=ft.Icons.DELETE_OUTLINE,
                     icon_size=16,
                     icon_color=c.ERROR,
-                    visible=not theme_info.is_builtin,
+                    visible=theme_info.filename != UNDELETABLE_THEME,
                     style=ft.ButtonStyle(
                         padding=ft.padding.all(4),
                         shape=ft.RoundedRectangleBorder(radius=BorderRadius.SM),

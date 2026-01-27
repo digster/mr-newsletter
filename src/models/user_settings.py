@@ -29,6 +29,12 @@ class UserSettings(Base, TimestampMixin):
         default="#6750A4",
     )  # Material 3 purple
 
+    active_theme: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        default="default.json",
+        nullable=True,
+    )  # Active theme filename
+
     # Fetching
     global_auto_fetch: Mapped[bool] = mapped_column(Boolean, default=True)
     default_fetch_interval: Mapped[int] = mapped_column(
@@ -65,4 +71,4 @@ class UserSettings(Base, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<UserSettings(theme={self.theme_mode}, user={self.user_email})>"
+        return f"<UserSettings(theme={self.theme_mode}, active_theme={self.active_theme}, user={self.user_email})>"

@@ -125,3 +125,17 @@ class UserSettingsRepository(BaseRepository[UserSettings]):
         settings.llm_temperature = max(0.0, min(1.0, temperature))
         await self.session.flush()
         return settings
+
+    async def update_active_theme(self, theme_filename: str | None) -> UserSettings:
+        """Update the active theme.
+
+        Args:
+            theme_filename: Theme filename (e.g., 'default.json') or None for default.
+
+        Returns:
+            Updated settings.
+        """
+        settings = await self.get_settings()
+        settings.active_theme = theme_filename or "default.json"
+        await self.session.flush()
+        return settings

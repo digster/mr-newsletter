@@ -414,6 +414,7 @@ class NewslettersPage(ft.View):
             labels=labels,
             on_save=lambda e: self.app.page.run_task(save_newsletter, e),
             on_cancel=close_dialog,
+            page=self.app.page,
         )
 
         self.app.page.show_dialog(dialog)
@@ -489,6 +490,7 @@ class NewslettersPage(ft.View):
             is_destructive=True,
             on_confirm=lambda e: self.app.page.run_task(delete, e),
             on_cancel=close_dialog,
+            page=self.app.page,
         )
 
         self.app.page.show_dialog(dialog)

@@ -4,10 +4,16 @@ Sophistication & Trust design direction - cool slate tones with layered depth.
 Inspired by Stripe and Mercury.
 """
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 if TYPE_CHECKING:
     import flet as ft
+
+
+# Active theme color cache
+# These override Colors.Light/Dark when a custom theme is applied
+_active_light_colors: Optional[Type] = None
+_active_dark_colors: Optional[Type] = None
 
 
 class Spacing:
@@ -181,27 +187,74 @@ class Animation:
     EASE_IN_OUT = "cubic-bezier(0.4, 0, 0.2, 1)"
 
 
+def set_active_theme_colors(light_colors: Type, dark_colors: Type) -> None:
+    """Set the active theme colors to use instead of defaults.
+
+    Call this when applying a custom theme to override Colors.Light/Dark.
+
+    Args:
+        light_colors: Light mode color class with same attributes as Colors.Light.
+        dark_colors: Dark mode color class with same attributes as Colors.Dark.
+    """
+    global _active_light_colors, _active_dark_colors
+    _active_light_colors = light_colors
+    _active_dark_colors = dark_colors
+
+
+def clear_active_theme_colors() -> None:
+    """Clear active theme colors and revert to defaults.
+
+    Call this to restore the default Colors.Light/Dark behavior.
+    """
+    global _active_light_colors, _active_dark_colors
+    _active_light_colors = None
+    _active_dark_colors = None
+
+
+def get_active_theme_colors() -> tuple[Optional[Type], Optional[Type]]:
+    """Get the currently active theme colors if any.
+
+    Returns:
+        Tuple of (light_colors, dark_colors) or (None, None) if using defaults.
+    """
+    return (_active_light_colors, _active_dark_colors)
+
+
+def has_active_theme() -> bool:
+    """Check if a custom theme is currently active.
+
+    Returns:
+        True if custom theme colors are set, False if using defaults.
+    """
+    return _active_light_colors is not None or _active_dark_colors is not None
+
+
 def get_colors(page: "ft.Page") -> Union[type[Colors.Light], type[Colors.Dark]]:
     """Get the appropriate Colors class based on current theme.
 
-    Returns Colors.Dark if dark mode is active, otherwise Colors.Light.
+    If a custom theme is active, returns the themed colors.
+    Otherwise returns Colors.Dark if dark mode is active, or Colors.Light.
 
     Args:
         page: The Flet page object to check theme mode from.
 
     Returns:
-        Colors.Light or Colors.Dark class based on current theme.
+        Colors.Light, Colors.Dark, or themed equivalent based on current theme.
     """
     if page is None:
-        return Colors.Light
+        return _active_light_colors if _active_light_colors else Colors.Light
 
     # Import here to avoid circular imports
     import flet as ft
 
+    is_dark = False
     if page.theme_mode == ft.ThemeMode.DARK:
-        return Colors.Dark
+        is_dark = True
     elif page.theme_mode == ft.ThemeMode.SYSTEM:
         # Check system preference
         if page.platform_brightness == ft.Brightness.DARK:
-            return Colors.Dark
-    return Colors.Light
+            is_dark = True
+
+    if is_dark:
+        return _active_dark_colors if _active_dark_colors else Colors.Dark
+    return _active_light_colors if _active_light_colors else Colors.Light

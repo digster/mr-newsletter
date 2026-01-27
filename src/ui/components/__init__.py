@@ -8,6 +8,7 @@ from .search_bar import SearchBar
 from .sidebar import NavItem, NewsletterNavItem, Sidebar
 from .sort_dropdown import SortDropdown
 from .summary_card import SummaryCard
+from .theme_settings import ThemeListItem, ThemePreviewCard, ThemePreviewPanel, ThemeSettings
 
 __all__ = [
     "AddNewsletterDialog",
@@ -22,4 +23,8 @@ __all__ = [
     "Sidebar",
     "SortDropdown",
     "SummaryCard",
+    "ThemeListItem",
+    "ThemePreviewCard",
+    "ThemePreviewPanel",
+    "ThemeSettings",
 ]

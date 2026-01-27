@@ -7,6 +7,7 @@ from .gmail_service import GmailService
 from .llm_service import LLMService
 from .newsletter_service import NewsletterService
 from .scheduler_service import SchedulerService
+from .theme_service import ThemeService
 
 __all__ = [
     "AuthService",
@@ -16,4 +17,5 @@ __all__ = [
     "LLMService",
     "NewsletterService",
     "SchedulerService",
+    "ThemeService",
 ]

@@ -20,19 +20,22 @@ class ConfirmDialog(ft.AlertDialog):
         on_confirm: Optional[Callable] = None,
         on_cancel: Optional[Callable] = None,
         is_destructive: bool = False,
+        page: Optional["ft.Page"] = None,
     ):
+        colors = get_colors(page)
+
         super().__init__(
             title=ft.Text(
                 title,
                 size=Typography.H3_SIZE,
                 weight=ft.FontWeight.W_600,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             content=ft.Container(
                 content=ft.Text(
                     message,
                     size=Typography.BODY_SIZE,
-                    color=Colors.Light.TEXT_SECONDARY,
+                    color=colors.TEXT_SECONDARY,
                 ),
                 padding=ft.padding.only(top=Spacing.SM),
             ),
@@ -40,7 +43,7 @@ class ConfirmDialog(ft.AlertDialog):
                 ft.TextButton(
                     cancel_text,
                     style=ft.ButtonStyle(
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=colors.TEXT_SECONDARY,
                         padding=ft.padding.symmetric(
                             horizontal=Spacing.MD, vertical=Spacing.XS
                         ),
@@ -49,7 +52,7 @@ class ConfirmDialog(ft.AlertDialog):
                 ),
                 ft.ElevatedButton(
                     confirm_text,
-                    bgcolor=Colors.Light.ERROR if is_destructive else Colors.Light.ACCENT,
+                    bgcolor=colors.ERROR if is_destructive else colors.ACCENT,
                     color="#FFFFFF",
                     style=ft.ButtonStyle(
                         padding=ft.padding.symmetric(
@@ -74,7 +77,10 @@ class AddNewsletterDialog(ft.AlertDialog):
         labels: List,
         on_save: Optional[Callable] = None,
         on_cancel: Optional[Callable] = None,
+        page: Optional["ft.Page"] = None,
     ):
+        colors = get_colors(page)
+
         self.name_field = ft.TextField(
             label="Newsletter Name",
             hint_text="e.g., Tech News",
@@ -86,13 +92,13 @@ class AddNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             label_style=ft.TextStyle(
-                color=Colors.Light.TEXT_SECONDARY,
+                color=colors.TEXT_SECONDARY,
             ),
             hint_style=ft.TextStyle(
-                color=Colors.Light.TEXT_TERTIARY,
+                color=colors.TEXT_TERTIARY,
             ),
         )
 
@@ -109,20 +115,20 @@ class AddNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             label_style=ft.TextStyle(
-                color=Colors.Light.TEXT_SECONDARY,
+                color=colors.TEXT_SECONDARY,
             ),
             hint_style=ft.TextStyle(
-                color=Colors.Light.TEXT_TERTIARY,
+                color=colors.TEXT_TERTIARY,
             ),
         )
 
         self.auto_fetch_switch = ft.Switch(
             label="Auto-fetch enabled",
             value=True,
-            active_color=Colors.Light.ACCENT,
+            active_color=colors.ACCENT,
         )
 
         self.interval_field = ft.TextField(
@@ -136,21 +142,21 @@ class AddNewsletterDialog(ft.AlertDialog):
             text_size=Typography.BODY_SIZE,
             text_style=ft.TextStyle(
                 size=Typography.BODY_SIZE,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             label_style=ft.TextStyle(
-                color=Colors.Light.TEXT_SECONDARY,
+                color=colors.TEXT_SECONDARY,
             ),
         )
 
-        self.color_picker = GradientColorPicker()
+        self.color_picker = GradientColorPicker(colors=colors)
 
         super().__init__(
             title=ft.Text(
                 "Add Newsletter",
                 size=Typography.H3_SIZE,
                 weight=ft.FontWeight.W_600,
-                color=Colors.Light.TEXT_PRIMARY,
+                color=colors.TEXT_PRIMARY,
             ),
             content=ft.Container(
                 content=ft.Column(
@@ -159,20 +165,20 @@ class AddNewsletterDialog(ft.AlertDialog):
                         ft.Container(height=Spacing.SM),
                         self.label_dropdown,
                         ft.Container(height=Spacing.MD),
-                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Divider(height=1, color=colors.BORDER_SUBTLE),
                         ft.Container(height=Spacing.MD),
                         ft.Text(
                             "Auto-fetch settings",
                             size=Typography.CAPTION_SIZE,
                             weight=ft.FontWeight.W_500,
-                            color=Colors.Light.TEXT_TERTIARY,
+                            color=colors.TEXT_TERTIARY,
                         ),
                         ft.Container(height=Spacing.XS),
                         self.auto_fetch_switch,
                         ft.Container(height=Spacing.SM),
                         self.interval_field,
                         ft.Container(height=Spacing.MD),
-                        ft.Divider(height=1, color=Colors.Light.BORDER_SUBTLE),
+                        ft.Divider(height=1, color=colors.BORDER_SUBTLE),
                         ft.Container(height=Spacing.MD),
                         self.color_picker,
                     ],
@@ -186,7 +192,7 @@ class AddNewsletterDialog(ft.AlertDialog):
                 ft.TextButton(
                     "Cancel",
                     style=ft.ButtonStyle(
-                        color=Colors.Light.TEXT_SECONDARY,
+                        color=colors.TEXT_SECONDARY,
                         padding=ft.padding.symmetric(
                             horizontal=Spacing.MD, vertical=Spacing.XS
                         ),
@@ -195,7 +201,7 @@ class AddNewsletterDialog(ft.AlertDialog):
                 ),
                 ft.ElevatedButton(
                     "Add Newsletter",
-                    bgcolor=Colors.Light.ACCENT,
+                    bgcolor=colors.ACCENT,
                     color="#FFFFFF",
                     style=ft.ButtonStyle(
                         padding=ft.padding.symmetric(

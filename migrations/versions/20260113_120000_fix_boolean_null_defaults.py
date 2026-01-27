@@ -18,16 +18,29 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _is_postgresql() -> bool:
+    """Check if we're running against PostgreSQL."""
+    return op.get_bind().dialect.name == "postgresql"
+
+
 def upgrade() -> None:
     """Upgrade database schema."""
+    # Use proper boolean literals for each database
+    if _is_postgresql():
+        false_val = "FALSE"
+        true_val = "TRUE"
+    else:
+        false_val = "0"
+        true_val = "1"
+
     # Step 1: Backfill NULL values in emails table
-    op.execute("UPDATE emails SET is_read = 0 WHERE is_read IS NULL")
-    op.execute("UPDATE emails SET is_starred = 0 WHERE is_starred IS NULL")
-    op.execute("UPDATE emails SET is_archived = 0 WHERE is_archived IS NULL")
+    op.execute(f"UPDATE emails SET is_read = {false_val} WHERE is_read IS NULL")
+    op.execute(f"UPDATE emails SET is_starred = {false_val} WHERE is_starred IS NULL")
+    op.execute(f"UPDATE emails SET is_archived = {false_val} WHERE is_archived IS NULL")
 
     # Step 2: Backfill NULL values in newsletters table
-    op.execute("UPDATE newsletters SET is_active = 1 WHERE is_active IS NULL")
-    op.execute("UPDATE newsletters SET auto_fetch_enabled = 1 WHERE auto_fetch_enabled IS NULL")
+    op.execute(f"UPDATE newsletters SET is_active = {true_val} WHERE is_active IS NULL")
+    op.execute(f"UPDATE newsletters SET auto_fetch_enabled = {true_val} WHERE auto_fetch_enabled IS NULL")
 
     # Step 3: Add NOT NULL constraints and server defaults for emails
     with op.batch_alter_table("emails", schema=None) as batch_op:
@@ -35,19 +48,19 @@ def upgrade() -> None:
             "is_read",
             existing_type=sa.BOOLEAN(),
             nullable=False,
-            server_default=sa.text("0"),
+            server_default=sa.text(false_val),
         )
         batch_op.alter_column(
             "is_starred",
             existing_type=sa.BOOLEAN(),
             nullable=False,
-            server_default=sa.text("0"),
+            server_default=sa.text(false_val),
         )
         batch_op.alter_column(
             "is_archived",
             existing_type=sa.BOOLEAN(),
             nullable=False,
-            server_default=sa.text("0"),
+            server_default=sa.text(false_val),
         )
 
     # Step 4: Add NOT NULL constraints and server defaults for newsletters
@@ -56,13 +69,13 @@ def upgrade() -> None:
             "is_active",
             existing_type=sa.BOOLEAN(),
             nullable=False,
-            server_default=sa.text("1"),
+            server_default=sa.text(true_val),
         )
         batch_op.alter_column(
             "auto_fetch_enabled",
             existing_type=sa.BOOLEAN(),
             nullable=False,
-            server_default=sa.text("1"),
+            server_default=sa.text(true_val),
         )
 
 

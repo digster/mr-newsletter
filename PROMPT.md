@@ -1198,3 +1198,40 @@ return ft.Container()
 - `src/services/email_service.py`
 - `src/ui/pages/email_list_page.py`
 - `src/ui/pages/email_reader_page.py`
+
+## Fix Theme Selection, Import/Export & App Startup
+
+**Date:** 2026-01-26
+
+**Issues:**
+1. Theme clicks don't work - Dialog not appearing when selecting a theme
+2. Import/Export not working - FilePicker used synchronously in async web mode
+3. Theme list needs scrollbar - Already fixed, verified working
+
+**Root Causes:**
+1. **Dialog API Change (Flet 0.70+):** Code used deprecated `page.dialog = dialog; dialog.open = True` pattern. Modern Flet uses `page.open(dialog)` and `page.close(dialog)`.
+2. **FilePicker Async Pattern (Flet 0.80+):** In web mode, `pick_files()` is non-blocking. The code treated it as synchronous. Modern Flet allows `await`ing these methods directly.
+3. **Web Mode Limitation:** `save_file()` and `get_directory_path()` are disabled in web mode per Flet documentation.
+
+**Implementation:**
+
+**File: `src/ui/components/theme_settings.py`**
+- Changed `_handle_select()` from `page.dialog = dialog; dialog.open = True` to `page.open(dialog)`
+- Changed `apply_theme()`/`cancel()` from `dialog.open = False` to `page.close(dialog)`
+- Same pattern applied to `_handle_delete()` method
+
+**File: `src/ui/pages/settings_page.py`**
+- Rewrote `_trigger_theme_import()` to use modern async/await pattern: `await ft.FilePicker().pick_files(...)`
+- Rewrote `_trigger_theme_export()` with web mode check (disabled in web) and async pattern
+- Added helpful message for web mode users attempting export
+
+**Key Flet 0.80 API Patterns:**
+```python
+# Dialog - Modern pattern
+page.open(dialog)     # Show dialog
+page.close(dialog)    # Close dialog
+
+# FilePicker - Modern async/await pattern  
+files = await ft.FilePicker().pick_files(...)
+path = await ft.FilePicker().save_file(...)  # Desktop only!
+```

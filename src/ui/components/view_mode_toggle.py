@@ -1,10 +1,13 @@
 """View mode toggle component for switching between grid and list views."""
 
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
 
 import flet as ft
 
-from src.ui.themes import BorderRadius, Colors, Spacing
+from src.ui.themes import BorderRadius, Colors, Spacing, get_colors
+
+if TYPE_CHECKING:
+    pass
 
 
 class ViewModeToggle(ft.Container):
@@ -14,9 +17,11 @@ class ViewModeToggle(ft.Container):
         self,
         current_mode: str = "grid",
         on_change: Optional[Callable[[str], None]] = None,
+        colors: Optional[type] = None,
     ):
         self._current_mode = current_mode
         self._on_change_callback = on_change
+        self._colors = colors or Colors.Light
 
         self.grid_button = self._build_button(
             icon=ft.Icons.GRID_VIEW,
@@ -38,7 +43,7 @@ class ViewModeToggle(ft.Container):
             ),
             padding=Spacing.XXS,
             border_radius=BorderRadius.SM,
-            bgcolor=Colors.Light.BG_TERTIARY,
+            bgcolor=self._colors.BG_TERTIARY,
         )
 
     def _build_button(
@@ -63,21 +68,21 @@ class ViewModeToggle(ft.Container):
     def _update_button_states(self) -> None:
         """Update visual states of buttons based on current mode."""
         self.grid_button.icon_color = (
-            Colors.Light.ACCENT
+            self._colors.ACCENT
             if self._current_mode == "grid"
-            else Colors.Light.TEXT_TERTIARY
+            else self._colors.TEXT_TERTIARY
         )
         self.grid_button.bgcolor = (
-            Colors.Light.BG_PRIMARY if self._current_mode == "grid" else None
+            self._colors.BG_PRIMARY if self._current_mode == "grid" else None
         )
 
         self.list_button.icon_color = (
-            Colors.Light.ACCENT
+            self._colors.ACCENT
             if self._current_mode == "list"
-            else Colors.Light.TEXT_TERTIARY
+            else self._colors.TEXT_TERTIARY
         )
         self.list_button.bgcolor = (
-            Colors.Light.BG_PRIMARY if self._current_mode == "list" else None
+            self._colors.BG_PRIMARY if self._current_mode == "list" else None
         )
 
     def _handle_click(self, e: ft.ControlEvent) -> None:

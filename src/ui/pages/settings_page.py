@@ -1,5 +1,6 @@
 """Settings page for app configuration with sophisticated styling."""
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import flet as ft
@@ -8,8 +9,10 @@ from src.repositories.user_settings_repository import UserSettingsRepository
 from src.services.auth_service import AuthService
 from src.services.llm_service import LLMService
 from src.services.newsletter_service import NewsletterService
+from src.services.theme_service import ThemeService
 from src.ui.components import ConfirmDialog, Sidebar
-from src.ui.themes import BorderRadius, Spacing, Typography, get_colors
+from src.ui.components.theme_settings import ThemeSettings
+from src.ui.themes import BorderRadius, Spacing, Typography, get_colors, set_active_theme_colors
 
 if TYPE_CHECKING:
     from src.app import NewsletterApp
@@ -61,7 +64,7 @@ class SettingsPage(ft.View):
                 color=self.colors.TEXT_SECONDARY,
             ),
         )
-        self.theme_dropdown.on_select = self._on_theme_change
+        self.theme_dropdown.on_select = self._on_appearance_mode_change
 
         # LLM Settings - initialized with defaults, updated in _load_data
         self._llm_enabled = False
@@ -164,6 +167,11 @@ class SettingsPage(ft.View):
             on_navigate=self._handle_navigate,
             page=self.app.page,
         )
+
+        # Theme settings
+        self._active_theme = "default.json"
+        self.theme_service = ThemeService()
+        self.theme_settings = None  # Initialized after loading settings
 
         self.controls = [self._build_content()]
 
@@ -283,6 +291,9 @@ class SettingsPage(ft.View):
                                             "Appearance",
                                             self.theme_dropdown,
                                         ),
+                                        ft.Container(height=Spacing.LG),
+                                        # Themes section
+                                        self._build_theme_section(),
                                         ft.Container(height=Spacing.LG),
                                         # AI Summarization section
                                         self._build_section(
@@ -446,6 +457,147 @@ class SettingsPage(ft.View):
             spacing=0,
         )
 
+    def _build_theme_section(self) -> ft.Control:
+        """Build the themes section with theme settings component."""
+        c = self.colors
+
+        # Create theme settings (will be updated when data loads)
+        self.theme_settings = ThemeSettings(
+            flet_page=self.app.page,
+            active_theme=self._active_theme,
+            on_theme_change=lambda filename: self.app.page.run_task(
+                self._on_theme_change, filename
+            ),
+            on_import=self._trigger_theme_import,
+            on_export=self._trigger_theme_export,
+        )
+
+        return ft.Column(
+            [
+                ft.Text(
+                    "THEMES",
+                    size=11,
+                    weight=ft.FontWeight.W_500,
+                    color=c.TEXT_TERTIARY,
+                ),
+                ft.Container(height=Spacing.SM),
+                ft.Container(
+                    content=self.theme_settings,
+                    padding=Spacing.MD,
+                    border_radius=BorderRadius.MD,
+                    border=ft.border.all(1, c.BORDER_DEFAULT),
+                    bgcolor=c.BG_PRIMARY,
+                ),
+            ],
+            spacing=0,
+        )
+
+    def _trigger_theme_import(self) -> None:
+        """Trigger the theme import file picker."""
+        # Use run_task to call the async handler
+        self.app.page.run_task(self._async_theme_import)
+
+    async def _async_theme_import(self) -> None:
+        """Async handler for theme import using modern Flet 0.80 await pattern."""
+        try:
+            # In Flet 0.80+, pick_files() can be awaited directly
+            files = await ft.FilePicker().pick_files(
+                dialog_title="Import Theme",
+                allowed_extensions=["json"],
+                file_type=ft.FilePickerFileType.CUSTOM,
+            )
+
+            if files and len(files) > 0:
+                source_path = Path(files[0].path)
+                success, error = self.theme_service.import_theme(source_path)
+
+                if success:
+                    self.app.show_snackbar("Theme imported successfully")
+                    if self.theme_settings:
+                        self.theme_settings.refresh()
+                else:
+                    self.app.show_snackbar(error or "Failed to import theme", error=True)
+        except Exception as ex:
+            self.app.show_snackbar(f"Import error: {ex}", error=True)
+
+    def _trigger_theme_export(self) -> None:
+        """Trigger the theme export save dialog."""
+        # Use run_task to call the async handler
+        self.app.page.run_task(self._async_theme_export)
+
+    async def _async_theme_export(self) -> None:
+        """Async handler for theme export.
+
+        Note: save_file() is disabled in web mode per Flet documentation.
+        In web mode, we show a message directing user to use desktop mode.
+        """
+        try:
+            # Check if we're in web mode - save_file doesn't work there
+            if self.app.page.web:
+                self.app.show_snackbar(
+                    "Export not available in web mode. Use desktop app to export themes.",
+                    error=True
+                )
+                return
+
+            # In Flet 0.80+, save_file() can be awaited directly (desktop only)
+            save_path = await ft.FilePicker().save_file(
+                dialog_title="Export Theme",
+                file_name=self._active_theme,
+                allowed_extensions=["json"],
+                file_type=ft.FilePickerFileType.CUSTOM,
+            )
+
+            if save_path:
+                dest_path = Path(save_path)
+                success, error = self.theme_service.export_theme(self._active_theme, dest_path)
+
+                if success:
+                    self.app.show_snackbar("Theme exported successfully")
+                else:
+                    self.app.show_snackbar(error or "Failed to export theme", error=True)
+        except Exception as ex:
+            self.app.show_snackbar(f"Export error: {ex}", error=True)
+
+    async def _on_theme_change(self, theme_filename: str) -> None:
+        """Handle theme change."""
+        try:
+            # Load and apply the new theme
+            success, theme, error = self.theme_service.load_theme(theme_filename)
+            if not success:
+                self.app.show_snackbar(error or "Failed to load theme", error=True)
+                return
+
+            # Apply theme colors
+            light_colors, dark_colors = self.theme_service.apply_theme(theme)
+
+            # Save to database
+            async with self.app.get_session() as session:
+                settings_repo = UserSettingsRepository(session)
+                await settings_repo.update_active_theme(theme_filename)
+                await session.commit()
+
+            # Update local state
+            self._active_theme = theme_filename
+            if self.theme_settings:
+                self.theme_settings.update_active_theme(theme_filename)
+
+            # Update page themes for Flet
+            from src.ui.themes.app_theme import AppTheme
+            self.app.page.theme = AppTheme.create_theme_from_colors(light_colors)
+            self.app.page.dark_theme = AppTheme.create_theme_from_colors(dark_colors, is_dark=True)
+
+            self.app.show_snackbar(f"Theme '{theme.metadata.name}' applied")
+
+            # Recreate page to apply new colors
+            self.app.page.views.clear()
+            from src.ui.pages.settings_page import SettingsPage
+            self.app.page.views.append(SettingsPage(self.app))
+            self.app.page.update()
+
+        except Exception as ex:
+            self.app.show_snackbar(f"Error applying theme: {ex}", error=True)
+
     def _handle_navigate(self, route: str) -> None:
         """Handle navigation from sidebar."""
         self.app.navigate(route)
@@ -455,47 +607,68 @@ class SettingsPage(ft.View):
         try:
             async with self.app.get_session() as session:
                 # Load user info
-                auth_service = AuthService(session)
-                email = await auth_service.get_current_user_email()
-                self.user_email_text.value = email or "Not signed in"
+                try:
+                    auth_service = AuthService(session)
+                    email = await auth_service.get_current_user_email()
+                    self.user_email_text.value = email or "Not signed in"
+                except Exception:
+                    self.user_email_text.value = "Error loading user info"
 
                 # Load newsletters for sidebar
-                newsletter_service = NewsletterService(session=session)
-                self.newsletters = await newsletter_service.get_all_newsletters()
+                try:
+                    newsletter_service = NewsletterService(session=session)
+                    self.newsletters = await newsletter_service.get_all_newsletters()
+                except Exception:
+                    self.newsletters = []
 
-                # Load LLM settings
-                settings_repo = UserSettingsRepository(session)
-                user_settings = await settings_repo.get_settings()
+                # Load user settings
+                try:
+                    settings_repo = UserSettingsRepository(session)
+                    user_settings = await settings_repo.get_settings()
+
+                    # Load active theme first (most important for visual consistency)
+                    self._active_theme = user_settings.active_theme or "default.json"
+                    if self.theme_settings:
+                        self.theme_settings.update_active_theme(self._active_theme)
+                except Exception as ex:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Error loading theme settings: {ex}")
+                    user_settings = None
 
                 # Update LLM UI with loaded settings
-                self._llm_enabled = user_settings.llm_enabled
-                self._llm_api_base_url = user_settings.llm_api_base_url or "http://localhost:1234/v1"
-                self._llm_model = user_settings.llm_model or ""
-                self._llm_max_tokens = user_settings.llm_max_tokens
-                self._llm_temperature = user_settings.llm_temperature
-                self._llm_has_api_key = bool(user_settings.llm_api_key_encrypted)
+                if user_settings:
+                    try:
+                        self._llm_enabled = user_settings.llm_enabled
+                        self._llm_api_base_url = user_settings.llm_api_base_url or "http://localhost:1234/v1"
+                        self._llm_model = user_settings.llm_model or ""
+                        self._llm_max_tokens = user_settings.llm_max_tokens
+                        self._llm_temperature = user_settings.llm_temperature
+                        self._llm_has_api_key = bool(user_settings.llm_api_key_encrypted)
 
-                # Update UI controls
-                self.llm_enabled_switch.value = self._llm_enabled
-                self.llm_api_url_field.value = self._llm_api_base_url
-                self.llm_model_field.value = self._llm_model
-                self.llm_max_tokens_field.value = str(self._llm_max_tokens)
-                self.llm_temperature_slider.value = self._llm_temperature
-                self.llm_temperature_label.value = f"{self._llm_temperature:.1f}"
+                        # Update UI controls
+                        self.llm_enabled_switch.value = self._llm_enabled
+                        self.llm_api_url_field.value = self._llm_api_base_url
+                        self.llm_model_field.value = self._llm_model
+                        self.llm_max_tokens_field.value = str(self._llm_max_tokens)
+                        self.llm_temperature_slider.value = self._llm_temperature
+                        self.llm_temperature_label.value = f"{self._llm_temperature:.1f}"
 
-                # Show placeholder if API key is set
-                if self._llm_has_api_key:
-                    self.llm_api_key_field.hint_text = "API key is set (enter new to change)"
+                        # Show placeholder if API key is set
+                        if self._llm_has_api_key:
+                            self.llm_api_key_field.hint_text = "API key is set (enter new to change)"
+                    except Exception as ex:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Error loading LLM settings: {ex}")
 
             # Update sidebar
             self.sidebar.update_newsletters(self.newsletters)
             self.app.page.update()
         except Exception:
-            self.user_email_text.value = "Error loading user info"
+            self.user_email_text.value = "Error loading data"
             self.app.page.update()
 
-    def _on_theme_change(self, e: ft.ControlEvent) -> None:
-        """Handle theme change."""
+    def _on_appearance_mode_change(self, e: ft.ControlEvent) -> None:
+        """Handle appearance mode (light/dark/system) change."""
         # Use e.data which contains the selected option key in on_select events
         theme_value = e.data or self.theme_dropdown.value
         if theme_value == "light":
@@ -671,6 +844,7 @@ class SettingsPage(ft.View):
             is_destructive=True,
             on_confirm=lambda e: self.app.page.run_task(confirm_sign_out, e),
             on_cancel=close_dialog,
+            page=self.app.page,
         )
 
         self.app.page.show_dialog(dialog)

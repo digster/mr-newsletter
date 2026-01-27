@@ -8,12 +8,14 @@ import flet as ft
 
 from src.config.settings import Settings, get_settings
 from src.models.base import close_db, get_async_session_maker, init_db
+from src.repositories.user_settings_repository import UserSettingsRepository
 from src.services.auth_service import AuthService
 from src.services.fetch_queue_service import FetchPriority, FetchQueueService
 from src.services.gmail_service import GmailService
 from src.services.newsletter_service import NewsletterService
 from src.services.scheduler_service import SchedulerService
-from src.ui.themes import AppTheme, BorderRadius, Colors, Spacing, Typography
+from src.services.theme_service import ThemeService
+from src.ui.themes import AppTheme, BorderRadius, Colors, Spacing, Typography, set_active_theme_colors
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,9 @@ class NewsletterApp:
         await init_db()
         self._session_maker = get_async_session_maker()
 
+        # Load and apply saved theme
+        await self._load_and_apply_theme()
+
         # Initialize services
         await self._init_services()
 
@@ -74,6 +79,40 @@ class NewsletterApp:
 
         # Register shutdown handler for clean exit
         self.page.on_close = lambda e: asyncio.create_task(self.shutdown())
+
+    async def _load_and_apply_theme(self) -> None:
+        """Load and apply the user's saved theme on startup."""
+        try:
+            async with self._session_maker() as session:
+                settings_repo = UserSettingsRepository(session)
+                user_settings = await settings_repo.get_settings()
+
+            # Get active theme filename
+            active_theme = user_settings.active_theme or "default.json"
+
+            # Load and apply theme
+            theme_service = ThemeService()
+            success, theme, error = theme_service.load_theme(active_theme)
+
+            if success and theme:
+                # Apply theme colors to the cache
+                light_colors, dark_colors = theme_service.apply_theme(theme)
+
+                # Update Flet page themes
+                self.page.theme = AppTheme.create_theme_from_colors(light_colors)
+                self.page.dark_theme = AppTheme.create_theme_from_colors(dark_colors, is_dark=True)
+
+                logger.info(f"Applied saved theme: {theme.metadata.name}")
+            else:
+                # Fall back to defaults if theme loading fails
+                logger.warning(f"Failed to load theme '{active_theme}': {error}")
+                self.page.theme = AppTheme.get_light_theme()
+                self.page.dark_theme = AppTheme.get_dark_theme()
+
+        except Exception as e:
+            logger.warning(f"Error loading theme: {e}, using defaults")
+            self.page.theme = AppTheme.get_light_theme()
+            self.page.dark_theme = AppTheme.get_dark_theme()
 
     async def _init_services(self) -> None:
         """Initialize application services."""

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src.services.theme_service import BUILTIN_THEMES, ThemeService
+from src.services.theme_service import BUILTIN_THEMES, UNDELETABLE_THEME, ThemeService
 from src.ui.themes.builtin_themes import ALL_BUILTIN_THEMES
 from src.ui.themes.design_tokens import Colors
 from src.ui.themes.dynamic_colors import create_colors_from_theme
@@ -323,12 +323,29 @@ class TestThemeService:
             data = json.load(f)
         assert data["metadata"]["name"] == "Default"
 
-    def test_delete_builtin_theme_fails(self, service):
-        """Test that built-in themes cannot be deleted."""
-        success, error = service.delete_theme("default.json")
+    def test_delete_default_theme_fails(self, service):
+        """Test that the default theme cannot be deleted."""
+        success, error = service.delete_theme(UNDELETABLE_THEME)
 
         assert success is False
-        assert "built-in" in error.lower()
+        assert "default" in error.lower()
+
+    def test_delete_other_builtin_theme_succeeds(self, service, temp_themes_dir):
+        """Test that non-default built-in themes can be deleted."""
+        # Pick a built-in theme that isn't the default
+        theme_to_delete = "nord.json"
+        assert theme_to_delete in BUILTIN_THEMES
+        assert theme_to_delete != UNDELETABLE_THEME
+
+        # Ensure the theme file exists first
+        theme_path = temp_themes_dir / theme_to_delete
+        assert theme_path.exists(), f"Theme {theme_to_delete} should exist before deletion"
+
+        success, error = service.delete_theme(theme_to_delete)
+
+        assert success is True
+        assert error is None
+        assert not theme_path.exists()
 
     def test_delete_custom_theme(self, service, temp_themes_dir):
         """Test deleting a custom theme."""

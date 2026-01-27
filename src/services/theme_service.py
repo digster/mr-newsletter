@@ -20,7 +20,7 @@ from src.ui.themes.theme_schema import ThemeSchema
 
 logger = logging.getLogger(__name__)
 
-# Built-in theme names (cannot be deleted)
+# Built-in theme names (used for UI badge display)
 BUILTIN_THEMES = frozenset({
     # Original themes
     "default.json",
@@ -41,6 +41,9 @@ BUILTIN_THEMES = frozenset({
     # Glass effects
     "liquid-glass.json",
 })
+
+# The default theme cannot be deleted (fallback/recovery theme)
+UNDELETABLE_THEME = "default.json"
 
 
 @dataclass
@@ -76,14 +79,37 @@ class ThemeService:
         self._themes_dir.mkdir(parents=True, exist_ok=True)
 
     def _ensure_builtin_themes(self) -> None:
-        """Create built-in themes if they don't exist."""
+        """Create built-in themes on first run, ensure default always exists.
+
+        Uses a marker file to track initialization state. On first run,
+        all built-in themes are created. On subsequent runs, only the
+        default theme is ensured to exist (as a recovery fallback).
+        This allows users to delete other built-in themes permanently.
+        """
         from src.ui.themes.builtin_themes import ALL_BUILTIN_THEMES
 
-        for filename, theme_data in ALL_BUILTIN_THEMES.items():
-            theme_path = self._themes_dir / filename
-            if not theme_path.exists():
-                theme_path.write_text(json.dumps(theme_data, indent=2))
-                logger.info(f"Created built-in theme at {theme_path}")
+        marker_file = self._themes_dir / ".builtin_themes_initialized"
+
+        # Always ensure default theme exists (recovery fallback)
+        default_path = self._themes_dir / UNDELETABLE_THEME
+        if not default_path.exists():
+            default_path.write_text(
+                json.dumps(ALL_BUILTIN_THEMES[UNDELETABLE_THEME], indent=2)
+            )
+            logger.info(f"Created default theme at {default_path}")
+
+        # Only create other built-in themes on first run
+        if not marker_file.exists():
+            for filename, theme_data in ALL_BUILTIN_THEMES.items():
+                if filename != UNDELETABLE_THEME:
+                    theme_path = self._themes_dir / filename
+                    if not theme_path.exists():
+                        theme_path.write_text(json.dumps(theme_data, indent=2))
+                        logger.info(f"Created built-in theme at {theme_path}")
+
+            # Mark initialization complete
+            marker_file.touch()
+            logger.info("Built-in themes initialized")
 
     def _colors_class_to_dict(self, colors_class: Type) -> dict:
         """Convert a Colors class to a dictionary.
@@ -318,7 +344,10 @@ class ThemeService:
             return False, f"Export failed: {e}"
 
     def delete_theme(self, filename: str) -> tuple[bool, Optional[str]]:
-        """Delete a custom theme file.
+        """Delete a theme file.
+
+        Built-in themes can be deleted except for the default theme,
+        which serves as a fallback/recovery option.
 
         Args:
             filename: Theme filename to delete.
@@ -326,8 +355,8 @@ class ThemeService:
         Returns:
             Tuple of (success, error_message).
         """
-        if filename in BUILTIN_THEMES:
-            return False, "Cannot delete built-in themes"
+        if filename == UNDELETABLE_THEME:
+            return False, "Cannot delete the default theme"
 
         theme_path = self._themes_dir / filename
 

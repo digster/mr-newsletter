@@ -1,9 +1,12 @@
 """Settings page for app configuration with sophisticated styling."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import flet as ft
+
+logger = logging.getLogger(__name__)
 
 from src.repositories.user_settings_repository import UserSettingsRepository
 from src.services.auth_service import AuthService
@@ -504,34 +507,78 @@ class SettingsPage(ft.View):
         - Desktop: Uses file.path directly
         - Web: Uploads file to server temp storage, then reads from there
         """
-        try:
-            # Create file picker with upload handler for web mode
-            file_picker = ft.FilePicker()
+        import asyncio
+        import uuid
 
+        from src.config.settings import get_settings
+
+        logger.debug(f"Theme import started - page.web={self.app.page.web}")
+
+        try:
+            # Track upload completion for web mode
+            upload_complete = asyncio.Event()
+            upload_error: str | None = None
+            uploaded_filename: str | None = None
+
+            def on_upload_progress(e: ft.FilePickerUploadEvent) -> None:
+                nonlocal upload_error, uploaded_filename
+                logger.debug(f"Upload progress: file={e.file_name}, progress={e.progress}, error={e.error}")
+                if e.error:
+                    upload_error = e.error
+                    upload_complete.set()
+                elif e.progress == 1.0:
+                    # Upload finished successfully
+                    uploaded_filename = e.file_name
+                    upload_complete.set()
+
+            # Create file picker with upload handler for web mode
+            file_picker = ft.FilePicker(on_upload=on_upload_progress)
+
+            logger.debug("Opening file picker dialog...")
             # In Flet 0.80+, pick_files() can be awaited directly
             files = await file_picker.pick_files(
                 dialog_title="Import Theme",
                 allowed_extensions=["json"],
                 file_type=ft.FilePickerFileType.CUSTOM,
             )
+            logger.debug(f"File picker returned: {files}")
 
             if files and len(files) > 0:
                 picked_file = files[0]
+                logger.debug(f"Picked file: name={picked_file.name}, path={picked_file.path}")
 
                 # Check if we have a file path (desktop) or need upload (web)
                 if picked_file.path:
                     # Desktop mode: use file path directly
+                    logger.debug("Using desktop mode (file path available)")
                     source_path = Path(picked_file.path)
                     success, error = self.theme_service.import_theme(source_path)
                 else:
                     # Web mode: upload file to server, then import from there
-                    # Generate a unique upload path for the theme file
-                    import uuid
+                    logger.debug("Using web mode (upload required)")
+                    settings = get_settings()
+                    upload_dir = settings.user_data_dir / "uploads"
 
+                    # Ensure upload directory exists
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    logger.debug(f"Upload directory: {upload_dir}")
+
+                    # Generate a unique upload path for the theme file
                     temp_filename = f"theme_import_{uuid.uuid4().hex[:8]}_{picked_file.name}"
-                    upload_url = self.app.page.get_upload_url(temp_filename, 60)
+                    logger.debug(f"Temp filename: {temp_filename}")
+
+                    try:
+                        upload_url = self.app.page.get_upload_url(temp_filename, 60)
+                        logger.debug(f"Got upload URL: {upload_url}")
+                    except Exception as url_err:
+                        logger.error(f"Failed to get upload URL: {url_err}")
+                        self.app.show_snackbar(
+                            f"Upload not configured: {url_err}", error=True
+                        )
+                        return
 
                     # Upload the file
+                    logger.debug("Starting file upload...")
                     await file_picker.upload(
                         files=[
                             ft.FilePickerUploadFile(
@@ -541,31 +588,47 @@ class SettingsPage(ft.View):
                         ]
                     )
 
-                    # Wait a moment for upload to complete
-                    import asyncio
+                    # Wait for upload to complete (with timeout)
+                    try:
+                        await asyncio.wait_for(upload_complete.wait(), timeout=30.0)
+                        logger.debug("Upload completed")
+                    except asyncio.TimeoutError:
+                        logger.error("Upload timed out after 30 seconds")
+                        self.app.show_snackbar("Upload timed out", error=True)
+                        return
 
-                    await asyncio.sleep(0.5)
+                    if upload_error:
+                        logger.error(f"Upload failed: {upload_error}")
+                        self.app.show_snackbar(f"Upload failed: {upload_error}", error=True)
+                        return
 
                     # Read from upload directory
-                    upload_dir = Path(self.app.page.upload_dir) if hasattr(self.app.page, 'upload_dir') else None
-                    if upload_dir and (upload_dir / temp_filename).exists():
-                        source_path = upload_dir / temp_filename
+                    source_path = upload_dir / temp_filename
+                    logger.debug(f"Reading uploaded file from: {source_path}")
+                    if source_path.exists():
                         success, error = self.theme_service.import_theme(source_path)
                         # Clean up temp file
                         try:
                             source_path.unlink()
+                            logger.debug("Cleaned up temp file")
                         except Exception:
                             pass
                     else:
+                        logger.error(f"Uploaded file not found at {source_path}")
                         success, error = False, "Failed to upload theme file in web mode"
 
                 if success:
+                    logger.info("Theme imported successfully")
                     self.app.show_snackbar("Theme imported successfully")
                     if self.theme_settings:
                         self.theme_settings.refresh()
                 else:
+                    logger.error(f"Theme import failed: {error}")
                     self.app.show_snackbar(error or "Failed to import theme", error=True)
+            else:
+                logger.debug("File picker was cancelled (no files selected)")
         except Exception as ex:
+            logger.exception(f"Theme import error: {ex}")
             self.app.show_snackbar(f"Import error: {ex}", error=True)
 
     def _trigger_theme_export(self) -> None:
@@ -576,35 +639,62 @@ class SettingsPage(ft.View):
     async def _async_theme_export(self) -> None:
         """Async handler for theme export.
 
-        Note: save_file() is disabled in web mode per Flet documentation.
-        In web mode, we show a message directing user to use desktop mode.
+        Handles both desktop and web modes:
+        - Desktop: Uses save_file() dialog to let user choose location
+        - Web: Copies JSON to clipboard (data URLs are blocked by browser security)
         """
+        logger.debug(f"Theme export started - page.web={self.app.page.web}, theme={self._active_theme}")
+
         try:
-            # Check if we're in web mode - save_file doesn't work there
             if self.app.page.web:
-                self.app.show_snackbar(
-                    "Export not available in web mode. Use desktop app to export themes.",
-                    error=True
+                # Web mode: copy JSON to clipboard
+                logger.debug("Using web mode export (clipboard)")
+                success, json_content, error = self.theme_service.get_theme_as_json(
+                    self._active_theme
                 )
-                return
 
-            # In Flet 0.80+, save_file() can be awaited directly (desktop only)
-            save_path = await ft.FilePicker().save_file(
-                dialog_title="Export Theme",
-                file_name=self._active_theme,
-                allowed_extensions=["json"],
-                file_type=ft.FilePickerFileType.CUSTOM,
-            )
+                if not success or not json_content:
+                    logger.error(f"Failed to read theme for export: {error}")
+                    self.app.show_snackbar(error or "Failed to read theme", error=True)
+                    return
 
-            if save_path:
-                dest_path = Path(save_path)
-                success, error = self.theme_service.export_theme(self._active_theme, dest_path)
+                logger.debug(f"Theme JSON content length: {len(json_content)} bytes")
 
-                if success:
-                    self.app.show_snackbar("Theme exported successfully")
+                # Copy to clipboard using Flet 0.80+ Clipboard service
+                await ft.Clipboard().set(json_content)
+                logger.info(f"Theme JSON copied to clipboard: {self._active_theme}")
+
+                self.app.show_snackbar(
+                    f"Theme JSON copied to clipboard! Save it as '{self._active_theme}'",
+                )
+            else:
+                # Desktop mode: use save_file() dialog
+                logger.debug("Using desktop mode export (save dialog)")
+                # In Flet 0.80+, save_file() can be awaited directly
+                save_path = await ft.FilePicker().save_file(
+                    dialog_title="Export Theme",
+                    file_name=self._active_theme,
+                    allowed_extensions=["json"],
+                    file_type=ft.FilePickerFileType.CUSTOM,
+                )
+                logger.debug(f"Save dialog returned: {save_path}")
+
+                if save_path:
+                    dest_path = Path(save_path)
+                    success, error = self.theme_service.export_theme(
+                        self._active_theme, dest_path
+                    )
+
+                    if success:
+                        logger.info(f"Theme exported successfully to: {dest_path}")
+                        self.app.show_snackbar("Theme exported successfully")
+                    else:
+                        logger.error(f"Theme export failed: {error}")
+                        self.app.show_snackbar(error or "Failed to export theme", error=True)
                 else:
-                    self.app.show_snackbar(error or "Failed to export theme", error=True)
+                    logger.debug("Save dialog was cancelled")
         except Exception as ex:
+            logger.exception(f"Theme export error: {ex}")
             self.app.show_snackbar(f"Export error: {ex}", error=True)
 
     async def _on_theme_change(self, theme_filename: str) -> None:

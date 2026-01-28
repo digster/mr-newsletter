@@ -1,6 +1,7 @@
 """Configuration management using Pydantic Settings."""
 
 import platform
+import secrets
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -67,6 +68,10 @@ class Settings(BaseSettings):
         description="Run as web app instead of desktop",
     )
     flet_hot_reload: bool = Field(default=False)
+    flet_secret_key: str = Field(
+        default_factory=lambda: secrets.token_hex(32),
+        description="Secret key for Flet web uploads (auto-generated if not set)",
+    )
 
     # Scheduler
     scheduler_enabled: bool = Field(default=True)

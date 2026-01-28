@@ -1295,3 +1295,62 @@ if hasattr(self, "theme_dropdown") and self.theme_dropdown:
 - `test_import_theme_from_bytes` - Valid theme import
 - `test_import_theme_from_bytes_invalid_json` - Invalid JSON handling
 - `test_import_theme_from_bytes_prevents_builtin_overwrite` - Built-in protection
+
+---
+
+## Theme Import/Export: Web Mode Fix
+
+**Date:** 2026-01-27
+
+**Issue:** Theme import/export buttons work in desktop mode but hang indefinitely in web mode. The browser shows "Working..." spinner but nothing happens.
+
+**Root Cause:** The server was running in **desktop mode** (`FLET_WEB_APP=false`) but being accessed via a web browser:
+- `FLET_WEB_APP` environment variable was not set
+- Therefore `page.web` returned `False`
+- Code used desktop APIs (FilePicker.pick_files with path, save_file dialog)
+- These APIs **cannot work** when accessed through a web browser
+
+Additionally, Flet's web file upload requires `FLET_SECRET_KEY` to be set for security.
+
+**Solution:**
+
+1. **Add `flet_secret_key` to Settings** (`src/config/settings.py`):
+   - Auto-generates a secure 64-character hex token using `secrets.token_hex(32)`
+   - Can be overridden via environment variable for production deployments
+
+```python
+import secrets
+
+flet_secret_key: str = Field(
+    default_factory=lambda: secrets.token_hex(32),
+    description="Secret key for Flet web uploads (auto-generated if not set)",
+)
+```
+
+2. **Set FLET_SECRET_KEY before ft.run()** (`src/main.py`):
+   - Only set in web mode to enable secure file uploads
+   - Uses `os.environ.setdefault()` to not override existing env vars
+
+```python
+if settings.flet_web_app:
+    # ... existing web mode config ...
+    os.environ.setdefault("FLET_SECRET_KEY", settings.flet_secret_key)
+    logger.info("Web mode enabled with file upload support")
+```
+
+3. **Add debug logging** (`src/ui/pages/settings_page.py`):
+   - Comprehensive logging in `_async_theme_import()` and `_async_theme_export()`
+   - Logs: page.web status, upload URL generation, file upload progress, exceptions
+
+**Usage:**
+To run in web mode with working theme import/export:
+```bash
+FLET_WEB_APP=true uv run python -m src.main
+```
+
+**Key Technical Insight:** Flet requires `FLET_SECRET_KEY` environment variable for web uploads. This is used to sign upload URLs and prevent unauthorized file uploads. Without it, `page.get_upload_url()` fails.
+
+**Files Modified:**
+- `src/config/settings.py` - Added `flet_secret_key` field with auto-generation
+- `src/main.py` - Set `FLET_SECRET_KEY` env var before `ft.run()` in web mode
+- `src/ui/pages/settings_page.py` - Added debug logging to theme import/export handlers

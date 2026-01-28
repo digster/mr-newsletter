@@ -3,6 +3,7 @@
 import asyncio
 import atexit
 import logging
+import os
 import sys
 
 import flet as ft
@@ -59,6 +60,12 @@ def run() -> None:
         # Web app mode
         app_kwargs["view"] = ft.AppView.WEB_BROWSER
         app_kwargs["host"] = settings.flet_host
+        # Enable file uploads in web mode (required for theme import)
+        app_kwargs["upload_dir"] = str(settings.user_data_dir / "uploads")
+        # Set secret key for secure web uploads (required by Flet)
+        # Uses setdefault to not override if already set in environment
+        os.environ.setdefault("FLET_SECRET_KEY", settings.flet_secret_key)
+        logger.info("Web mode enabled with file upload support")
     else:
         # Desktop app mode
         app_kwargs["view"] = ft.AppView.FLET_APP

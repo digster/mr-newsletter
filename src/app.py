@@ -347,19 +347,36 @@ class NewsletterApp:
         self.page.go(route)
 
     def show_snackbar(self, message: str, error: bool = False) -> None:
-        """Show a snackbar message.
+        """Show a notification message.
 
         Args:
             message: Message to show.
             error: Whether this is an error message.
+
+        Note: Uses AlertDialog added to overlay as a workaround for SnackBar
+        visibility issues in Flet 0.80 web mode with Views and async contexts.
         """
-        self.page.snack_bar = ft.SnackBar(
-            content=ft.Text(
-                message,
-                size=Typography.BODY_SMALL_SIZE,
-                color="#FFFFFF" if error else Colors.Light.TEXT_PRIMARY,
+
+        def close_dialog(e: ft.ControlEvent) -> None:
+            dialog.open = False
+            if dialog in self.page.overlay:
+                self.page.overlay.remove(dialog)
+            self.page.update()
+
+        dialog = ft.AlertDialog(
+            modal=False,
+            title=ft.Text(
+                "Error" if error else "Success",
+                size=16,
+                weight=ft.FontWeight.W_500,
             ),
-            bgcolor=Colors.Light.ERROR if error else Colors.Light.BG_TERTIARY,
+            content=ft.Text(message, size=Typography.BODY_SMALL_SIZE),
+            actions=[
+                ft.TextButton("OK", on_click=close_dialog),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            open=True,
         )
-        self.page.snack_bar.open = True
+        # Add to overlay for proper z-index in View-based layouts
+        self.page.overlay.append(dialog)
         self.page.update()

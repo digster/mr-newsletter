@@ -62,7 +62,7 @@ class Settings(BaseSettings):
 
     # Flet UI
     flet_host: str = Field(default="127.0.0.1")
-    flet_port: int = Field(default=8550)
+    flet_port: int = Field(default=9550)  # Changed from 8550 to avoid port caching issues
     flet_web_app: bool = Field(
         default=False,
         description="Run as web app instead of desktop",

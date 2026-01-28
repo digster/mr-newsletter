@@ -1354,3 +1354,55 @@ FLET_WEB_APP=true uv run python -m src.main
 - `src/config/settings.py` - Added `flet_secret_key` field with auto-generation
 - `src/main.py` - Set `FLET_SECRET_KEY` env var before `ft.run()` in web mode
 - `src/ui/pages/settings_page.py` - Added debug logging to theme import/export handlers
+
+---
+
+## Fix Desktop Mode Restart Loop
+
+**Date:** 2026-01-28
+
+**Issue:** The app continuously restarts in desktop mode (every 1-2 seconds) with repeated "App session started" logs (~100+ times in 10 seconds).
+
+**Root Cause Analysis:**
+
+1. **Initial Hypothesis (Partially Correct):** `page.on_close` was being used incorrectly - in Flet 0.80+, it's for web session expiration, not desktop window close.
+
+2. **Actual Root Cause (Discovered via Testing):** Port 8550 had stale state/caching issues in Flet's desktop view. Testing showed:
+   - Port 8550: 100+ sessions in 10 seconds (broken)
+   - Port 9550: 1 session (working)
+   - Port 9999: 1 session (working)
+
+The Flet desktop client caches connection state per-port. When a port was previously used with an unclean exit, subsequent connections enter a reconnection loop.
+
+**Solution:**
+
+1. **Changed default port from 8550 to 9550:**
+   - Updated `src/config/settings.py`: `flet_port` default to 9550
+   - Updated `.env`: `FLET_PORT=9550`
+
+2. **Fixed window close handler for desktop mode:**
+```python
+# In initialize():
+if not self.settings.flet_web_app:
+    self.page.window.prevent_close = True
+    self.page.window.on_event = self._on_window_event
+
+# New method:
+async def _on_window_event(self, e: ft.WindowEvent) -> None:
+    if e.type == ft.WindowEventType.CLOSE:
+        logger.info("Window close event received, performing cleanup...")
+        await self.shutdown()
+        await self.page.window.destroy()
+```
+
+**Key Technical Insights:**
+- Port caching in Flet desktop view can cause restart loops - use a different port if experiencing issues
+- `page.on_close` → Web session expiration (wrong for desktop)
+- `page.window.on_event` → Actual window events (correct for desktop)
+- Must set `prevent_close = True` to intercept close events
+- Use `ft.WindowEventType.CLOSE` enum, not string comparison
+
+**Files Modified:**
+- `src/config/settings.py` - Changed default port
+- `src/app.py` - Fixed window close handler
+- `.env` - Updated FLET_PORT value

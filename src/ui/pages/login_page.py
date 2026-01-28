@@ -61,7 +61,7 @@ class LoginPage(ft.View):
                             ),
                             ft.Container(width=Spacing.SM),
                             ft.Text(
-                                "Newsletter",
+                                "Mr Newsletter",
                                 size=Typography.H2_SIZE,
                                 weight=ft.FontWeight.W_600,
                                 color=c.TEXT_PRIMARY,

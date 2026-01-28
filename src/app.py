@@ -43,7 +43,7 @@ class NewsletterApp:
     async def initialize(self) -> None:
         """Initialize the application."""
         # Configure page
-        self.page.title = "Newsletter Reader"
+        self.page.title = "Mr Newsletter"
         self.page.theme_mode = ft.ThemeMode.SYSTEM
         self.page.padding = 0
         self.page.spacing = 0

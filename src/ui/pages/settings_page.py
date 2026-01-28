@@ -318,7 +318,7 @@ class SettingsPage(ft.View):
                                                             ),
                                                             ft.Container(width=Spacing.XS),
                                                             ft.Text(
-                                                                "Newsletter Reader",
+                                                                "Mr Newsletter",
                                                                 size=Typography.BODY_SIZE,
                                                                 weight=ft.FontWeight.W_500,
                                                                 color=c.TEXT_PRIMARY,

@@ -62,6 +62,9 @@ class NewsletterApp:
         await init_db()
         self._session_maker = get_async_session_maker()
 
+        # Load saved theme (after database ready, before services)
+        await self._load_saved_theme()
+
         # Initialize services
         await self._init_services()
 
@@ -93,6 +96,58 @@ class NewsletterApp:
             delay_seconds=self.settings.fetch_queue_delay_seconds,
             fetch_callback=self._queue_fetch_callback,
         )
+
+    async def _load_saved_theme(self) -> None:
+        """Load and apply the saved theme from user settings.
+
+        Called during app initialization after database is ready.
+        Restores the user's previously selected theme on app restart.
+        """
+        from src.repositories.user_settings_repository import UserSettingsRepository
+        from src.services.theme_service import ThemeService
+
+        try:
+            async with self._session_maker() as session:
+                settings_repo = UserSettingsRepository(session)
+                user_settings = await settings_repo.get_settings()
+
+                theme_filename = user_settings.active_theme or "default.json"
+
+                # Skip if using default (already applied in initialize())
+                if theme_filename == "default.json":
+                    return
+
+                theme_service = ThemeService()
+                success, theme, error = theme_service.load_theme(theme_filename)
+
+                if not success:
+                    logger.warning(
+                        f"Failed to load saved theme '{theme_filename}': {error}"
+                    )
+                    # Reset to default in database since theme file is invalid/missing
+                    await settings_repo.update_active_theme("default.json")
+                    await session.commit()
+                    return
+
+                # Apply theme to global color cache
+                light_colors, dark_colors = theme_service.apply_theme(theme)
+
+                # Set theme mode based on theme's base preference
+                if theme.metadata.base == "dark":
+                    self.page.theme_mode = ft.ThemeMode.DARK
+                else:
+                    self.page.theme_mode = ft.ThemeMode.LIGHT
+
+                # Update Flet page theme objects with custom colors
+                self.page.theme = AppTheme.create_theme_from_colors(light_colors)
+                self.page.dark_theme = AppTheme.create_theme_from_colors(
+                    dark_colors, is_dark=True
+                )
+
+                logger.info(f"Loaded saved theme: {theme.metadata.name}")
+
+        except Exception as ex:
+            logger.exception(f"Error loading saved theme: {ex}")
 
     async def _scheduled_fetch_callback(self, newsletter_id: int) -> None:
         """Callback for scheduled newsletter fetch.

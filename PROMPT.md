@@ -1406,3 +1406,38 @@ async def _on_window_event(self, e: ft.WindowEvent) -> None:
 - `src/config/settings.py` - Changed default port
 - `src/app.py` - Fixed window close handler
 - `.env` - Updated FLET_PORT value
+
+---
+
+## Fix Theme Persistence Bug
+
+**Date:** 2026-01-28
+
+**Issue:** When a theme was applied, it worked correctly. However, after app restart:
+- The chosen theme remained **selected** in the Settings UI (database stored it correctly)
+- But the actual **styling didn't apply** - it defaulted to the built-in default theme
+
+**Root Cause:** In `src/app.py` lines 51-53, the app set default themes during initialization:
+```python
+self.page.theme = AppTheme.get_light_theme()
+self.page.dark_theme = AppTheme.get_dark_theme()
+```
+But the saved theme from the database was never loaded and applied. The global color cache (`_active_light_colors`/`_active_dark_colors` in `design_tokens.py`) remained `None`.
+
+**Solution:** Added a new method `_load_saved_theme()` to `NewsletterApp` in `src/app.py` that:
+1. Reads `active_theme` from `UserSettings` database
+2. Loads the theme file via `ThemeService.load_theme()`
+3. Applies colors via `ThemeService.apply_theme()` (sets global cache)
+4. Updates `page.theme` and `page.dark_theme` with Flet theme objects
+5. Sets `page.theme_mode` based on theme's base preference (light/dark)
+
+Called this method in `initialize()` after database init but before services.
+
+**Edge Cases Handled:**
+- Theme file deleted: Falls back to default.json, updates database
+- Default theme selected: Early return (already applied)
+- Corrupted theme file: Falls back gracefully, logs warning
+- New installation: Default theme applied (no change needed)
+
+**Files Modified:**
+- `src/app.py` - Added `_load_saved_theme()` method and call in `initialize()`

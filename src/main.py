@@ -4,6 +4,7 @@ import asyncio
 import atexit
 import logging
 import os
+import signal
 import sys
 
 import flet as ft
@@ -45,13 +46,40 @@ async def main(page: ft.Page) -> None:
     await app.initialize()
 
 
+def setup_signal_handlers() -> None:
+    """Setup signal handlers for graceful shutdown.
+
+    Ensures cleanup runs even when terminated by system signals
+    (e.g., kill command, system shutdown, terminal close).
+    """
+
+    def signal_handler(signum: int, frame) -> None:
+        signal_name = signal.Signals(signum).name
+        logger.info(f"Received {signal_name}, initiating shutdown...")
+        # Exit will trigger atexit handlers
+        sys.exit(0)
+
+    # SIGTERM: sent by kill command, system shutdown, process managers
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # SIGHUP: sent when terminal is closed or SSH connection drops
+    # Only available on Unix-like systems
+    if hasattr(signal, "SIGHUP"):
+        signal.signal(signal.SIGHUP, signal_handler)
+
+
 def run() -> None:
     """Run the application."""
     settings = get_settings()
 
+    # Setup signal handlers for graceful termination
+    setup_signal_handlers()
+
     logger.info(f"Starting Newsletter Manager in {settings.environment} mode")
 
     # Configure Flet app options
+    # port=0 enables dynamic port allocation - OS assigns a free port
+    # This prevents TCP TIME_WAIT issues from previous unclean exits
     app_kwargs = {
         "port": settings.flet_port,
     }

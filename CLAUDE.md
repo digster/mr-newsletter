@@ -1,27 +1,7 @@
-Make sure any changes that would warrant an update to the readme are documented accordingly in the readme file.
-
-Make sure the gitignore file is updated if necessary.
-
-Always try and use uv whenever trying to use or run anything related to python/pip.
-
 Use the flet skills from the skills folder for flet related stuff.
 
-Always try and add tests for new features whenever possible.
+For ui related changes, test the changes using the playwright vnc version and fallback to the vanilla playwright if it's not available.
 
-Always run tests after changes, to test integrity.
+Always use the app in web mode when debugging, not the desktop mode.
 
-For ui related changes, test the changes using an actual browser instance and the mcp extension.
-
-Always use the app in web mode when debugging not the desktop mode.
-
-Always ask before removing or changing any major existing functionality that is out of the scope of the request before working on it.
-
-UI and UX should be based on modern standards.
-
-Everything should be clean, performant and adhering to modern coding standards.
-
-After every fix generate a git commit message that can be used by the user.
-
-Ask clarifying questions where necessary.
-
-**Very Important** - Whatever we make, make sure to never have something which will delete emails from the original email inbox. Inform me if we are going in that direction.
+**Very Important** - Whatever we make, make sure to never have something which will delete emails from the original(gmail) inbox. Inform me if we are going in that direction.

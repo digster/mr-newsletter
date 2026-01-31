@@ -1,13 +1,16 @@
 """Base Page Object for E2E tests."""
 
+import os
 from pathlib import Path
 from typing import Optional
 
 from playwright.sync_api import Page, expect
 
-# Test configuration
-TEST_PORT = 8550
-TEST_BASE_URL = f"http://127.0.0.1:{TEST_PORT}"
+# Test configuration - use host.docker.internal when running in VNC container
+USE_VNC_BROWSER = os.environ.get("USE_VNC_BROWSER", "true").lower() == "true"
+TEST_HOST = os.environ.get("APP_HOST", "host.docker.internal" if USE_VNC_BROWSER else "127.0.0.1")
+TEST_PORT = os.environ.get("APP_PORT", "8550")
+TEST_BASE_URL = f"http://{TEST_HOST}:{TEST_PORT}"
 SCREENSHOT_DIR = Path(__file__).parent.parent / "screenshots"
 
 

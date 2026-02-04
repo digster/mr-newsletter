@@ -1,6 +1,6 @@
 Use the flet skills from the skills folder for flet related stuff.
 
-For ui related changes, test the changes using the playwright vnc version and fallback to the vanilla playwright if it's not available.
+For ui related changes, test the changes using playwright-vnc mcp and fallback to playwright mcp if it's not available.
 
 Always use the app in web mode when debugging, not the desktop mode.
 
